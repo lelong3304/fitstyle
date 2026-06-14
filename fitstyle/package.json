@@ -1,0 +1,14 @@
+{
+  "name": "fitstyle-ai-mvp",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "concurrently \"npm.cmd run dev --prefix backend\" \"npm.cmd run dev --prefix frontend\"",
+    "dev:backend": "npm.cmd run dev --prefix backend",
+    "dev:frontend": "npm.cmd run dev --prefix frontend",
+    "install:all": "npm.cmd install && npm.cmd install --prefix backend && npm.cmd install --prefix frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
+  }
+}
