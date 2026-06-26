@@ -90,7 +90,9 @@ export async function createPremiumCheckout(userId) {
   }
 
   const { merchantId, secretKey } = requireSepayConfig();
-  const frontendOrigin = process.env.FRONTEND_ORIGIN || "http://127.0.0.1:5173";
+  const originStr = process.env.FRONTEND_ORIGIN || "http://127.0.0.1:5173";
+  const origins = originStr.split(",").map(o => o.trim());
+  const frontendOrigin = origins.find(o => o.startsWith("https://")) || origins[0];
   const invoiceNumber = `FS${Date.now()}${String(user._id).slice(-4)}`.toUpperCase();
 
   const order = await SubscriptionOrder.create({
