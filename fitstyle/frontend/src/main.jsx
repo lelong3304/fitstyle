@@ -1655,10 +1655,6 @@ function PremiumPage({ user, apiFetch, onUserUpdate }) {
     if (payment === "success" && invoice && user) confirmPayment(invoice);
   }, [searchParams, user]);
 
-  React.useEffect(() => {
-    if (checkout?.checkoutUrl && formRef.current) formRef.current.submit();
-  }, [checkout]);
-
   async function refreshPlan() {
     const response = await apiFetch("/api/billing/plan");
     const data = await safeReadJson(response);
@@ -1780,12 +1776,33 @@ function PremiumPage({ user, apiFetch, onUserUpdate }) {
       </div>
 
       {checkout?.checkoutUrl && (
-        <form ref={formRef} action={checkout.checkoutUrl} method="POST" className="hidden-payment-form">
-          {Object.entries(checkout.checkoutFields || {}).map(([name, value]) => (
-            <input key={name} type="hidden" name={name} value={value} readOnly />
-          ))}
-          <button type="submit">Tiếp tục thanh toán</button>
-        </form>
+        <div className="payment-redirect-overlay">
+          <div className="payment-redirect-modal panel">
+            <h3>Hóa đơn Premium sẵn sàng</h3>
+            <p className="redirect-invoice">Mã hóa đơn: <strong>{checkout.order.invoiceNumber}</strong></p>
+            <div className="redirect-details">
+              <div>
+                <span>Sản phẩm:</span>
+                <strong>Đăng ký FitStyle Premium (30 ngày)</strong>
+              </div>
+              <div>
+                <span>Số tiền cần thanh toán:</span>
+                <strong className="redirect-price">49.000đ</strong>
+              </div>
+            </div>
+            <form action={checkout.checkoutUrl} method="POST" className="redirect-form">
+              {Object.entries(checkout.checkoutFields || {}).map(([name, value]) => (
+                <input key={name} type="hidden" name={name} value={value} readOnly />
+              ))}
+              <button type="submit" className="primary-button redirect-btn">
+                Tiến hành thanh toán qua SePay
+              </button>
+            </form>
+            <button type="button" className="secondary-button redirect-cancel-btn" onClick={() => setCheckout(null)}>
+              Hủy bỏ thanh toán
+            </button>
+          </div>
+        </div>
       )}
 
       {mealPlan && (
