@@ -94,7 +94,7 @@ function getGoalAdvice(goal, bmiCategory) {
     calorieDelta: 0,
     tips: [
       "Giữ calo ổn định, tập trung ngủ đủ và tăng chất lượng bữa ăn.",
-      "Tập kháng lực đều để cơ thể săn chắc hơn dù cân nặng không đổi nhiều.",
+      "Tập kháng lực đều đặn để cơ thể săn chắc hơn dù cân nặng không đổi nhiều.",
       "Theo dõi số đo eo, ảnh tiến trình và cảm giác năng lượng thay vì chỉ nhìn cân nặng."
     ]
   };
@@ -110,7 +110,7 @@ function getFashionAdvice(bodyShape) {
     balanced: {
       focus: "Giữ tỉ lệ gọn gàng và linh hoạt nhiều phong cách.",
       wear: ["Áo vừa vai, quần ống đứng hoặc slim-straight", "Set tối giản có điểm nhấn màu hoặc phụ kiện", "Trang phục nhấn nhẹ vào đường eo"],
-      avoid: ["Form quá rộng che hết tỉ lệ cơ thể", "Quá nhiều lớp dày làm mất sự cân đối"]
+      avoid: ["Form quá rộng che hết tỷ lệ cơ thể", "Quá nhiều lớp dày làm mất sự cân đối"]
     },
     curvy: {
       focus: "Tạo đường dọc, giữ form gọn và tôn điểm mạnh.",

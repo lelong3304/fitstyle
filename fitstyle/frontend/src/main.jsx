@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Activity, BarChart3, Camera, Dumbbell, ExternalLink, History, Home, Images, LogIn, LogOut, Percent, Ruler, Shirt, ShoppingBag, Sparkles, Target, UserRound, UserPlus } from "lucide-react";
+import { Activity, BarChart3, Camera, Dumbbell, ExternalLink, Eye, EyeOff, History, Home, Images, Lock, LogIn, LogOut, Mail, Percent, Ruler, Save, Settings, Shirt, ShoppingBag, Sparkles, Target, UserRound, UserPlus, X, ZoomIn } from "lucide-react";
 import "./styles.css";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:4000";
@@ -30,18 +30,70 @@ const initialAuthForm = {
 function readSavedSession() {
   const token = localStorage.getItem("fitstyle_token") || sessionStorage.getItem("fitstyle_token") || "";
   const savedUser = localStorage.getItem("fitstyle_user") || sessionStorage.getItem("fitstyle_user");
-  return {
-    token,
-    user: savedUser ? JSON.parse(savedUser) : null,
-    remember: Boolean(localStorage.getItem("fitstyle_token"))
-  };
+
+  try {
+    return {
+      token,
+      user: savedUser ? JSON.parse(savedUser) : null,
+      remember: Boolean(localStorage.getItem("fitstyle_token"))
+    };
+  } catch {
+    localStorage.removeItem("fitstyle_token");
+    localStorage.removeItem("fitstyle_user");
+    sessionStorage.removeItem("fitstyle_token");
+    sessionStorage.removeItem("fitstyle_user");
+    return { token: "", user: null, remember: false };
+  }
+}
+
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, message: "" };
+  }
+
+  static getDerivedStateFromError(error) {
+    return { hasError: true, message: error?.message || "Unknown UI error" };
+  }
+
+  componentDidCatch(error) {
+    console.error("FitStyle UI error", error);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <main className="app-shell">
+          <section className="panel empty-state app-error-state">
+            <Sparkles size={42} />
+            <h2>FitStyle UI error</h2>
+            <p>Copy this error line and send it to Codex so we can fix the exact runtime issue.</p>
+            <code className="app-error-detail">{this.state.message}</code>
+            <button className="primary-button" type="button" onClick={() => {
+              localStorage.removeItem("fitstyle_token");
+              localStorage.removeItem("fitstyle_user");
+              sessionStorage.removeItem("fitstyle_token");
+              sessionStorage.removeItem("fitstyle_user");
+              window.location.reload();
+            }}>
+              Reset session and reload
+            </button>
+          </section>
+        </main>
+      );
+    }
+
+    return this.props.children;
+  }
 }
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppShell />
-    </BrowserRouter>
+    <AppErrorBoundary>
+      <BrowserRouter>
+        <AppShell />
+      </BrowserRouter>
+    </AppErrorBoundary>
   );
 }
 
@@ -104,92 +156,89 @@ function AppShell() {
 
   return (
     <main className="app-shell">
-      <header className="site-header">
-        <Link className="brand-mark" to="/">
-          <span><Sparkles size={18} /></span>
-          <div>
-            <strong>FitStyle AI</strong>
-            <small>Health + Style</small>
-          </div>
-        </Link>
-
-        <div className="header-right">
-          {user ? (
-            <UserBadge user={user} onLogout={logout} />
-          ) : (
-            <div className="auth-actions">
-              <Link className="secondary-link" to="/login">
-                <LogIn size={17} />
-                Đăng nhập
-              </Link>
-              <Link className="primary-link" to="/register">
-                <UserPlus size={17} />
-                Đăng ký
-              </Link>
+      <div className="top-shell">
+        <header className="site-header">
+          <Link className="brand-mark" to="/">
+            <span className="brand-logo-frame">
+              <img src="/fitstyle-logo.jpg" alt="FitStyle logo" />
+            </span>
+            <div>
+              <strong>FitStyle AI</strong>
+              <small>Health + Style</small>
             </div>
-          )}
-        </div>
-      </header>
+          </Link>
 
-      <section className="intro" aria-hidden="true">
-        <div>
-          <p className="eyebrow">Health + Style</p>
-          <h1>FitStyle AI</h1>
-          <p className="intro-copy">
-            Upload ảnh toàn thân để AI nhận diện dáng người, kết hợp chỉ số cơ thể để gợi ý sức khỏe và phong cách.
-          </p>
-        </div>
-        <div className="intro-actions">
-          <div className="intro-badge">
-            <Sparkles size={18} />
-            Body Scan + Style
+          <div className="header-right">
+            {user ? (
+              <UserBadge user={user} onLogout={logout} />
+            ) : (
+              <div className="auth-actions">
+                <Link className="secondary-link" to="/login">
+                  <LogIn size={17} />
+                  Đăng nhập
+                </Link>
+                <Link className="primary-link" to="/register">
+                  <UserPlus size={17} />
+                  Đăng ký
+                </Link>
+              </div>
+            )}
           </div>
-          {user && <UserBadge user={user} onLogout={logout} />}
-        </div>
-      </section>
+        </header>
 
-      {user && (
-        <nav className="app-nav">
-          <NavLink to="/">
-            <Home size={17} />
-            Trang chủ
-          </NavLink>
-          <NavLink to="/analyze">
-            <Camera size={17} />
-            Phân tích
-          </NavLink>
-          <NavLink to="/history">
-            <History size={17} />
-            Lịch sử
-          </NavLink>
-          <NavLink to="/try-on">
-            <Images size={17} />
-            Phối đồ
-          </NavLink>
-          <NavLink to="/wardrobe">
-            <ShoppingBag size={17} />
-            Tủ đồ
-          </NavLink>
-          {user?.role === "admin" && (
-            <NavLink to="/admin/dashboard">
-              <BarChart3 size={17} />
-              Dashboard
+        {user && (
+          <nav className="app-nav" aria-label="Điều hướng chính">
+            <NavLink to="/">
+              <Home size={17} />
+              Trang chủ
             </NavLink>
-          )}
-          {user?.role === "admin" && (
-            <NavLink to="/admin/products">
+            <NavLink to="/analyze">
+              <Camera size={17} />
+              Phân tích
+            </NavLink>
+            <NavLink to="/history">
+              <History size={17} />
+              Lịch sử
+            </NavLink>
+            <NavLink to="/try-on">
+              <Images size={17} />
+              Phối đồ
+            </NavLink>
+            <NavLink to="/wardrobe">
               <ShoppingBag size={17} />
-              Admin sản phẩm
+              Tủ đồ
             </NavLink>
-          )}
-          {user?.role === "admin" && (
-            <NavLink to="/admin/products/manage">
-              <ShoppingBag size={17} />
-              Quản lý SP
+            <NavLink className="premium-nav-link" to="/premium">
+              <Sparkles size={17} />
+              {user.premium ? "Premium" : "Nâng cấp"}
             </NavLink>
-          )}
-        </nav>
-      )}
+            {user?.role === "admin" && (
+              <NavLink to="/admin/dashboard">
+                <BarChart3 size={17} />
+                Dashboard
+              </NavLink>
+            )}
+            {user?.role === "admin" && (
+              <NavLink to="/admin/products">
+                <ShoppingBag size={17} />
+                Admin sản phẩm
+              </NavLink>
+            )}
+            {user?.role === "admin" && (
+              <NavLink to="/admin/products/manage">
+                <ShoppingBag size={17} />
+                Quản lý SP
+              </NavLink>
+            )}
+            {user?.role === "admin" && (
+              <NavLink to="/admin/users">
+                <UserRound size={17} />
+                Quản lý User
+              </NavLink>
+            )}
+          </nav>
+        )}
+      </div>
 
       <Routes>
         <Route path="/" element={<HomePage user={user} />} />
@@ -198,12 +247,16 @@ function AppShell() {
         <Route path="/register" element={<AuthPage mode="register" user={user} onSession={saveSession} />} />
         <Route path="/history" element={<HistoryPage user={user} apiFetch={apiFetch} />} />
         <Route path="/history/:id" element={<HistoryDetailPage user={user} apiFetch={apiFetch} />} />
-        <Route path="/try-on" element={<TryOnPage user={user} apiFetch={apiFetch} />} />
+        <Route path="/try-on" element={<TryOnPage user={user} apiFetch={apiFetch} onUserUpdate={(nextUser) => saveSession(token, nextUser, rememberSession)} />} />
         <Route path="/wardrobe" element={<WardrobePage user={user} apiFetch={apiFetch} />} />
+        <Route path="/premium" element={<PremiumPage user={user} apiFetch={apiFetch} onUserUpdate={(nextUser) => saveSession(token, nextUser, rememberSession)} />} />
         <Route path="/admin/dashboard" element={<AdminDashboardPage user={user} apiFetch={apiFetch} />} />
         <Route path="/admin/products" element={<AdminProductsPage user={user} apiFetch={apiFetch} />} />
         <Route path="/admin/products/manage" element={<AdminProductManagePage user={user} apiFetch={apiFetch} />} />
+        <Route path="/admin/users" element={<AdminUsersPage user={user} apiFetch={apiFetch} />} />
+        <Route path="/profile" element={<ProfilePage user={user} apiFetch={apiFetch} onUserUpdate={(nextUser) => saveSession(token, nextUser, rememberSession)} />} />
       </Routes>
+      <ChatWidgets apiFetch={apiFetch} />
     </main>
   );
 }
@@ -803,6 +856,7 @@ function AdminProductsPage({ user, apiFetch }) {
 
 function AdminProductManagePage({ user, apiFetch }) {
   const [products, setProducts] = React.useState([]);
+  const [searchQuery, setSearchQuery] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [message, setMessage] = React.useState("");
   const [error, setError] = React.useState("");
@@ -873,6 +927,12 @@ function AdminProductManagePage({ user, apiFetch }) {
     }
   }
 
+  const filteredProducts = products.filter((product) =>
+    (product.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (product.reason || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (product.category || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   return (
     <section className="admin-products-page">
       <div className="section-heading wardrobe-heading">
@@ -890,15 +950,38 @@ function AdminProductManagePage({ user, apiFetch }) {
       {message && <p className="success">{message}</p>}
 
       <section className="panel manage-products-panel">
-        <div className="section-heading">
-          <h2>Sản phẩm hiện có</h2>
-          <span>{loading ? "Đang tải..." : products.length}</span>
+        <div className="section-heading manage-products-header-with-search" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-md)", flexWrap: "wrap", marginBottom: "var(--space-md)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)" }}>
+            <h2>Sản phẩm hiện có</h2>
+            <span className="count-badge" style={{ background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: "600" }}>
+              {loading ? "Đang tải..." : filteredProducts.length}
+            </span>
+          </div>
+          <div className="search-bar-container" style={{ flex: "1", maxWidth: "400px" }}>
+            <input
+              type="text"
+              placeholder="Tìm kiếm sản phẩm theo tên, loại..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+              style={{
+                width: "100%",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "8px",
+                padding: "8px 16px",
+                color: "#fff",
+                fontSize: "0.9rem",
+                outline: "none"
+              }}
+            />
+          </div>
         </div>
-        {products.length === 0 ? (
-          <p className="manage-empty">Chưa có sản phẩm trong database.</p>
+        {filteredProducts.length === 0 ? (
+          <p className="manage-empty">Không tìm thấy sản phẩm phù hợp.</p>
         ) : (
           <div className="manage-product-list">
-            {products.map((product) => (
+            {filteredProducts.map((product) => (
               <article className="manage-product-row" key={product.id}>
                 <img src={product.imageUrl} alt={product.name} />
                 <div className="manage-product-main">
@@ -1179,7 +1262,7 @@ function WardrobePage({ user, apiFetch }) {
   );
 }
 
-function TryOnPage({ user, apiFetch }) {
+function TryOnPage({ user, apiFetch, onUserUpdate }) {
   const [searchParams] = useSearchParams();
   const [form, setForm] = React.useState({
     personImageUrl: "",
@@ -1193,15 +1276,18 @@ function TryOnPage({ user, apiFetch }) {
   const [resultUrl, setResultUrl] = React.useState("");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState("");
+  const [isZoomed, setIsZoomed] = React.useState(false);
   const selectedProductName = searchParams.get("productName") || "";
 
   function updateField(event) {
     const { name, value, checked, type } = event.target;
     setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+    setError("");
   }
 
   function updateFile(event) {
     const file = event.target.files?.[0] || null;
+    setError("");
 
     if (event.target.name === "personImage") {
       setPersonFile(file);
@@ -1212,14 +1298,31 @@ function TryOnPage({ user, apiFetch }) {
     }
   }
 
+  const isTryOnSubmittingRef = React.useRef(false);
+  const lastTryOnDataRef = React.useRef(null);
+
   async function submitTryOn(event) {
     event.preventDefault();
+    if (isTryOnSubmittingRef.current) return;
 
     if (!user) {
       setError("Bạn cần đăng nhập để dùng tính năng phối đồ.");
       return;
     }
 
+    if (lastTryOnDataRef.current) {
+      const isFormEqual = Object.keys(form).every(key => String(form[key]) === String(lastTryOnDataRef.current.form[key]));
+      const isPersonFileEqual = (personFile ? personFile.name : null) === lastTryOnDataRef.current.personFileName &&
+                                (personFile ? personFile.size : null) === lastTryOnDataRef.current.personFileSize;
+      const isGarmentFileEqual = (garmentFile ? garmentFile.name : null) === lastTryOnDataRef.current.garmentFileName &&
+                                 (garmentFile ? garmentFile.size : null) === lastTryOnDataRef.current.garmentFileSize;
+      if (isFormEqual && isPersonFileEqual && isGarmentFileEqual) {
+        setError("Bạn đã phối đồ với các ảnh này rồi. Hãy thay đổi ảnh hoặc tùy chọn khác.");
+        return;
+      }
+    }
+
+    isTryOnSubmittingRef.current = true;
     setLoading(true);
     setError("");
     setResultUrl("");
@@ -1240,9 +1343,19 @@ function TryOnPage({ user, apiFetch }) {
 
       if (!response.ok) throw new Error(data.message || "Không thể tạo ảnh phối đồ.");
       setResultUrl(data.result_url);
+      if (data.plan) onUserUpdate({ ...user, ...data.plan });
+
+      lastTryOnDataRef.current = {
+        form: { ...form },
+        personFileName: personFile ? personFile.name : null,
+        personFileSize: personFile ? personFile.size : null,
+        garmentFileName: garmentFile ? garmentFile.name : null,
+        garmentFileSize: garmentFile ? garmentFile.size : null,
+      };
     } catch (err) {
       setError(toFriendlyNetworkError(err));
     } finally {
+      isTryOnSubmittingRef.current = false;
       setLoading(false);
     }
   }
@@ -1260,6 +1373,10 @@ function TryOnPage({ user, apiFetch }) {
           <p>
             Upload ảnh bản thân dáng đứng thẳng, rõ nét và ảnh quần áo nền đơn giản để tạo ảnh phối đồ.
           </p>
+          <div className="plan-inline-note">
+            {user.premium ? "Bạn đang dùng Premium: phối đồ không giới hạn và có lịch ăn 30 ngày." : `Gói Free còn ${user.remainingFreeTryOn ?? 0}/1 lượt phối đồ miễn phí.`}
+            {!user.premium && <Link to="/premium"> Nâng cấp Premium</Link>}
+          </div>
           {selectedProductName && <p className="selected-product-note">Đang thử phối: {selectedProductName}</p>}
         </div>
 
@@ -1331,9 +1448,14 @@ function TryOnPage({ user, apiFetch }) {
           />
         ) : resultUrl ? (
           <>
-            <img src={resultUrl} alt="Kết quả phối đồ từ AI" />
-            <a className="secondary-link" href={resultUrl} target="_blank" rel="noreferrer">
-              Mở ảnh kết quả
+            <div className="tryon-img-container" onClick={() => setIsZoomed(true)}>
+              <img src={resultUrl} alt="Kết quả phối đồ từ AI" />
+              <span className="zoom-hint">
+                <ZoomIn size={16} /> Nhấp để xem ảnh to
+              </span>
+            </div>
+            <a className="secondary-link" href={resultUrl} download target="_blank" rel="noreferrer">
+              Mở ảnh trong tab mới
             </a>
           </>
         ) : (
@@ -1344,6 +1466,17 @@ function TryOnPage({ user, apiFetch }) {
           </div>
         )}
       </section>
+
+      {isZoomed && (
+        <div className="tryon-lightbox" onClick={() => setIsZoomed(false)}>
+          <div className="tryon-lightbox-content">
+            <img src={resultUrl} alt="Kết quả phối đồ phóng to" />
+            <button className="tryon-lightbox-close" onClick={() => setIsZoomed(false)}>
+              <X size={28} />
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }
@@ -1354,7 +1487,7 @@ function HomePage({ user }) {
       <section className="home-hero-v2">
         <div className="home-hero-copy">
           <p className="eyebrow">Health + Fashion Intelligence</p>
-          <h1>Hiểu cơ thể hơn. Mặc đẹp hơn. Sống khỏe hơn.</h1>
+          <h1>Hiểu cơ thể hơn. Mặc đẹp hơn. <br></br>Sống khỏe hơn.</h1>
           <p>
             FitStyle AI phân tích chỉ số cơ thể và ảnh toàn thân để gợi ý mục tiêu sức khỏe,
             đánh giá outfit và đề xuất tủ đồ phù hợp với vóc dáng của từng người.
@@ -1369,6 +1502,13 @@ function HomePage({ user }) {
               {user ? "Xem tủ đồ" : "Đăng nhập"}
             </Link>
           </div>
+          {user && !user.premium && (
+            <div className="home-premium-note">
+              <Sparkles size={18} />
+              <span>Gói Free được phân tích thoải mái và có 1 lượt phối đồ. Premium mở phối đồ không giới hạn cùng lịch ăn 30 ngày.</span>
+              <Link to="/premium">Xem gói 49k</Link>
+            </div>
+          )}
           <div className="home-icon-strip">
             <span><Camera size={16} /> Body scan</span>
             <span><Activity size={16} /> Health score</span>
@@ -1385,7 +1525,7 @@ function HomePage({ user }) {
 
         <div className="home-visual">
           <img
-            src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&w=1000&q=85"
+            src="/hero-image.png"
             alt="Người mẫu thời trang trong trang phục hiện đại"
           />
           <div className="visual-card visual-card-top">
@@ -1498,274 +1638,256 @@ function HomePage({ user }) {
   );
 }
 
-function AnalyzePage({ user, apiFetch }) {
-  const navigate = useNavigate();
-  const [form, setForm] = React.useState(initialForm);
-  const [photo, setPhoto] = React.useState(null);
-  const [preview, setPreview] = React.useState("");
-  const [result, setResult] = React.useState(null);
+function PremiumPage({ user, apiFetch, onUserUpdate }) {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [checkout, setCheckout] = React.useState(null);
+  const [mealPlan, setMealPlan] = React.useState(null);
+  const [selectedDay, setSelectedDay] = React.useState(1);
+  const [activeWeek, setActiveWeek] = React.useState(1);
   const [loading, setLoading] = React.useState(false);
+  const [message, setMessage] = React.useState("");
   const [error, setError] = React.useState("");
+  const formRef = React.useRef(null);
 
-  function updateField(event) {
-    const { name, value, checked, type } = event.target;
-    setForm((current) => ({ ...current, [name]: type === "checkbox" ? checked : value }));
+  React.useEffect(() => {
+    const invoice = searchParams.get("invoice");
+    const payment = searchParams.get("payment");
+    if (payment === "success" && invoice && user) confirmPayment(invoice);
+  }, [searchParams, user]);
+
+  React.useEffect(() => {
+    if (checkout?.checkoutUrl && formRef.current) formRef.current.submit();
+  }, [checkout]);
+
+  async function refreshPlan() {
+    const response = await apiFetch("/api/billing/plan");
+    const data = await safeReadJson(response);
+    if (response.ok && data.user) onUserUpdate(data.user);
   }
 
-  function handlePhoto(event) {
-    const file = event.target.files?.[0];
-    setPhoto(file || null);
-    setPreview(file ? URL.createObjectURL(file) : "");
-  }
-
-  async function submitAnalysis(event) {
-    event.preventDefault();
-
-    if (!user) {
-      setError("Bạn cần đăng nhập để phân tích và lưu lịch sử.");
-      return;
-    }
-
+  async function startCheckout() {
     setLoading(true);
     setError("");
-
-    const payload = new FormData();
-    Object.entries(form).forEach(([key, value]) => payload.append(key, value));
-    if (photo) payload.append("bodyPhoto", photo);
+    setMessage("");
 
     try {
-      const response = await apiFetch("/api/analyze", {
-        method: "POST",
-        body: payload
-      });
-      const data = await response.json();
+      const response = await apiFetch("/api/billing/checkout", { method: "POST" });
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể tạo thanh toán Premium.");
 
-      if (!response.ok) {
-        throw new Error(data.errors?.join(" ") || data.message || "Không thể phân tích dữ liệu.");
+      if (data.alreadyPremium) {
+        setMessage("Tài khoản của bạn đang là Premium.");
+        onUserUpdate({ ...user, ...data.plan });
+        return;
       }
 
-      setResult(data);
+      setCheckout(data);
+      setMessage("Đang chuyển sang cổng thanh toán SePay...");
     } catch (err) {
-      setError(err.message);
+      setError(toFriendlyNetworkError(err));
     } finally {
       setLoading(false);
     }
   }
 
+  async function confirmPayment(invoiceNumber) {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await apiFetch("/api/billing/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceNumber })
+      });
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể xác nhận thanh toán.");
+      onUserUpdate(data.user);
+      setMessage("Thanh toán thành công. Premium đã được kích hoạt 30 ngày.");
+      setSearchParams({});
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function loadMealPlan() {
+    setLoading(true);
+    setError("");
+
+    try {
+      await refreshPlan();
+      const response = await apiFetch("/api/meal-plan");
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể tải lịch ăn 30 ngày.");
+      setMealPlan(data.mealPlan);
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!user) return <LockedPanel title="FitStyle Premium" />;
+
+  const premiumUntil = user.premiumUntil ? formatDate(user.premiumUntil) : "Chưa kích hoạt";
+
   return (
-    <>
-      <section className="workspace">
-        <form className="panel form-panel" onSubmit={submitAnalysis}>
-          <div className="panel-title">
-            <Ruler size={20} />
-            <h2>Thông tin cơ thể</h2>
+    <section className="premium-page">
+      <section className="panel premium-hero-panel">
+        <div>
+          <p className="eyebrow">FitStyle Premium</p>
+          <h2>Nâng cấp trải nghiệm sức khỏe và phối đồ.</h2>
+          <p>
+            Gói Premium 49.000đ/tháng mở khóa phối đồ không giới hạn và lịch ăn uống 30 ngày theo lượng calo mục tiêu từ kết quả phân tích của bạn.
+          </p>
+          <div className="premium-actions">
+            <button className="primary-button" type="button" onClick={startCheckout} disabled={loading || user.premium}>
+              {user.premium ? "Đang dùng Premium" : loading ? "Đang xử lý..." : "Nâng cấp 49.000đ/tháng"}
+            </button>
+            <button className="secondary-button" type="button" onClick={loadMealPlan} disabled={loading}>
+              Xem lịch ăn 30 ngày
+            </button>
+          </div>
+          {message && <p className="success">{message}</p>}
+          {error && <p className="error">{error}</p>}
+        </div>
+        <div className="premium-price-card">
+          <span>Premium</span>
+          <strong>49.000đ</strong>
+          <small>/ tháng</small>
+          <p>Hết hạn: {premiumUntil}</p>
+        </div>
+      </section>
+
+      <div className="premium-feature-grid">
+        <article className="panel">
+          <Images size={24} />
+          <h3>Phối đồ không giới hạn</h3>
+          <p>Free được 1 lượt thử. Premium mở khóa thử phối outfit thoải mái.</p>
+        </article>
+        <article className="panel">
+          <Dumbbell size={24} />
+          <h3>Lịch ăn 30 ngày</h3>
+          <p>Dựa trên target calories gần nhất sau khi phân tích chỉ số cơ thể.</p>
+        </article>
+        <article className="panel">
+          <Target size={24} />
+          <h3>Theo mục tiêu calo</h3>
+          <p>Tăng, giảm hoặc duy trì cân nặng với khẩu phần rõ theo từng ngày.</p>
+        </article>
+      </div>
+
+      {checkout?.checkoutUrl && (
+        <form ref={formRef} action={checkout.checkoutUrl} method="POST" className="hidden-payment-form">
+          {Object.entries(checkout.checkoutFields || {}).map(([name, value]) => (
+            <input key={name} type="hidden" name={name} value={value} readOnly />
+          ))}
+          <button type="submit">Tiếp tục thanh toán</button>
+        </form>
+      )}
+
+      {mealPlan && (
+        <section className="panel meal-plan-panel">
+          <div className="section-heading">
+            <div>
+              <h2>Lịch ăn uống 30 ngày Premium</h2>
+              <p>Mục tiêu khoảng {mealPlan.targetCalories} kcal/ngày — {mealPlan.direction}</p>
+            </div>
+            <span className="meal-plan-source">
+              {mealPlan.generatedFromLatestAnalysis ? "⚡ Phân tích cá nhân hóa" : "📋 Thực đơn mẫu"}
+            </span>
           </div>
 
-          <ProfileForm form={form} onChange={updateField} />
+          {/* Week Tabs */}
+          <div className="week-tabs">
+            {[1, 2, 3, 4, 5].map((w) => {
+              const startDay = (w - 1) * 7 + 1;
+              const endDay = Math.min(w * 7, 30);
+              return (
+                <button
+                  key={w}
+                  type="button"
+                  className={`week-tab-btn ${activeWeek === w ? "active" : ""}`}
+                  onClick={() => {
+                    setActiveWeek(w);
+                    setSelectedDay(startDay);
+                  }}
+                >
+                  Tuần {w} <span className="week-range">(Ngày {startDay}-{endDay})</span>
+                </button>
+              );
+            })}
+          </div>
 
-          <label className="upload-box">
-            <Camera size={20} />
-            <span>{photo ? photo.name : "Upload ảnh toàn thân để AI phân tích dáng người"}</span>
-            <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handlePhoto} />
-          </label>
+          {/* Day Circles Row */}
+          <div className="day-circles-row">
+            {mealPlan.days
+              .filter((d) => d.day >= (activeWeek - 1) * 7 + 1 && d.day <= Math.min(activeWeek * 7, 30))
+              .map((day) => (
+                <button
+                  key={day.day}
+                  type="button"
+                  className={`day-circle-btn ${selectedDay === day.day ? "active" : ""}`}
+                  onClick={() => setSelectedDay(day.day)}
+                >
+                  <span className="day-num">D{day.day}</span>
+                  <span className="day-cal">{day.calories} kcal</span>
+                </button>
+              ))}
+          </div>
 
-          {preview && <img className="photo-preview" src={preview} alt="Ảnh toàn thân đã upload" />}
+          {/* Active Day Detail Card */}
+          {(() => {
+            const activeDayObj = mealPlan.days.find((d) => d.day === selectedDay) || mealPlan.days[0];
+            
+            function renderMealItem(mealText, icon, title) {
+              if (!mealText) return null;
+              const parts = mealText.split(":");
+              const header = parts[0] || "";
+              const desc = parts.slice(1).join(":") || "";
+              const calBadge = header.replace(title + " khoảng ", "").trim();
+              return (
+                <div className="meal-card-item">
+                  <div className="meal-card-header-row">
+                    <span className="meal-icon-title">
+                      <span>{icon}</span>
+                      <strong>{title}</strong>
+                    </span>
+                    <span className="meal-calorie-badge">{calBadge}</span>
+                  </div>
+                  <div className="meal-card-content">
+                    <p>{desc.trim()}</p>
+                  </div>
+                </div>
+              );
+            }
 
-          {error && <p className="error">{error}</p>}
+            return (
+              <div className="active-day-detail-panel" key={selectedDay}>
+                <div className="active-day-header">
+                  <div className="active-day-meta">
+                    <h3>Ngày {activeDayObj.day}</h3>
+                    <p className="active-day-focus">🎯 Tiêu điểm: {activeDayObj.focus}</p>
+                  </div>
+                  <div className="active-day-total-calories">
+                    <span className="cal-value">{activeDayObj.calories}</span>
+                    <span className="cal-unit">kcal / ngày</span>
+                  </div>
+                </div>
 
-          <button className="primary-button" type="submit" disabled={loading || !user}>
-            {!user ? "Đăng nhập để phân tích" : loading ? "Đang phân tích..." : "Phân tích ngay"}
-          </button>
-          {result?.historyId && (
-            <button className="secondary-button" type="button" onClick={() => navigate(`/history/${result.historyId}`)}>
-              Mở chi tiết lịch sử
-            </button>
-          )}
-        </form>
-
-        {loading ? (
-          <LoadingPanel
-            title="AI đang phân tích ảnh và chỉ số"
-            description="Hệ thống đang đọc ảnh toàn thân, tính BMI/TDEE và tạo gợi ý sức khỏe, phong cách."
-          />
-        ) : (
-          <Results result={result} />
-        )}
-      </section>
-    </>
-  );
-}
-
-function ProfileForm({ form, onChange }) {
-  return (
-    <>
-      <div className="field-grid">
-        <label>
-          Tuổi
-          <input name="age" type="number" min="16" max="80" value={form.age} onChange={onChange} />
-        </label>
-        <label>
-          Giới tính
-          <select name="gender" value={form.gender} onChange={onChange}>
-            <option value="male">Nam</option>
-            <option value="female">Nữ</option>
-          </select>
-        </label>
-        <label>
-          Chiều cao (cm)
-          <input name="heightCm" type="number" min="120" max="230" value={form.heightCm} onChange={onChange} />
-        </label>
-        <label>
-          Cân nặng (kg)
-          <input name="weightKg" type="number" min="30" max="250" value={form.weightKg} onChange={onChange} />
-        </label>
-      </div>
-
-      <div className="measurement-block">
-        <div>
-          <strong>Số đo để ước tính body fat</strong>
-          <p>Không bắt buộc, nhưng nên có cổ/ngực/eo/hông để kết quả khách quan hơn ảnh đơn thuần.</p>
-        </div>
-        <div className="field-grid">
-          <label>
-            Vòng cổ (cm)
-            <input name="neckCm" type="number" min="20" max="180" value={form.neckCm} onChange={onChange} />
-          </label>
-          <label>
-            Vòng ngực (cm)
-            <input name="chestCm" type="number" min="20" max="180" value={form.chestCm} onChange={onChange} />
-          </label>
-          <label>
-            Vòng eo (cm)
-            <input name="waistCm" type="number" min="20" max="180" value={form.waistCm} onChange={onChange} />
-          </label>
-          <label className="wide-field">
-            Vòng hông (cm, cần cho nữ)
-            <input name="hipCm" type="number" min="20" max="180" value={form.hipCm} onChange={onChange} />
-          </label>
-        </div>
-      </div>
-
-      <label>
-        Mức độ vận động
-        <select name="activityLevel" value={form.activityLevel} onChange={onChange}>
-          <option value="sedentary">Ít vận động</option>
-          <option value="light">Nhẹ, 1-3 buổi/tuần</option>
-          <option value="moderate">Vừa, 3-5 buổi/tuần</option>
-          <option value="active">Nhiều, 6-7 buổi/tuần</option>
-        </select>
-      </label>
-
-      <label>
-        Mục tiêu
-        <select name="goal" value={form.goal} onChange={onChange}>
-          <option value="lose">Giảm cân/giảm mỡ</option>
-          <option value="maintain">Duy trì, săn chắc hơn</option>
-          <option value="gain">Tăng cân/tăng cơ</option>
-        </select>
-      </label>
-    </>
-  );
-}
-
-function HistoryPage({ user, apiFetch }) {
-  const [records, setRecords] = React.useState([]);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
-
-  React.useEffect(() => {
-    if (user) loadHistory();
-  }, [user]);
-
-  async function loadHistory() {
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await apiFetch("/api/analyses");
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || "Không thể tải lịch sử.");
-      setRecords(data.records || []);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (!user) return <LockedPanel title="Lịch sử phân tích" />;
-
-  return (
-    <section className="history-section history-page">
-      <div className="section-heading">
-        <h2>{user.role === "admin" ? "Lịch sử toàn hệ thống" : "Lịch sử phân tích"}</h2>
-        <span>{loading ? "Đang tải..." : `${records.length} bản ghi`}</span>
-      </div>
-      {error && <p className="error">{error}</p>}
-      {records.length === 0 ? (
-        <div className="panel history-empty">Chưa có lịch sử. Mỗi lần bấm phân tích, kết quả sẽ được lưu lại ở đây.</div>
-      ) : (
-        <div className="history-grid">
-          {records.map((record) => (
-            <Link className="history-card" key={record.id} to={`/history/${record.id}`}>
-              <span>{formatDate(record.createdAt)}</span>
-              <strong>{record.summary.bodyShape || "Chưa có dáng"}</strong>
-              <small>
-                BMI {record.summary.bmi}
-                {record.summary.bodyFat ? ` • BF ${record.summary.bodyFat}%` : ""}
-                {record.summary.outfitScore !== null ? ` • Outfit ${record.summary.outfitScore}/10` : ""}
-              </small>
-              <em>{record.summary.direction}</em>
-            </Link>
-          ))}
-        </div>
+                <div className="active-day-meals-grid">
+                  {renderMealItem(activeDayObj.breakfast, "🌅", "Bữa sáng")}
+                  {renderMealItem(activeDayObj.lunch, "☀️", "Bữa trưa")}
+                  {renderMealItem(activeDayObj.dinner, "🌆", "Bữa tối")}
+                  {renderMealItem(activeDayObj.snack, "🍎", "Bữa phụ")}
+                </div>
+              </div>
+            );
+          })()}
+        </section>
       )}
-    </section>
-  );
-}
-
-function HistoryDetailPage({ user, apiFetch }) {
-  const { id } = useParams();
-  const [record, setRecord] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState("");
-
-  React.useEffect(() => {
-    if (user) loadRecord();
-  }, [user, id]);
-
-  async function loadRecord() {
-    setLoading(true);
-    setError("");
-
-    try {
-      const response = await apiFetch(`/api/analyses/${id}`);
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || "Không thể mở chi tiết lịch sử.");
-      setRecord(data.record);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  if (!user) return <LockedPanel title="Chi tiết lịch sử" />;
-
-  return (
-    <section className="detail-page">
-      <div className="section-heading">
-        <div>
-          <h2>Chi tiết phân tích</h2>
-          {record && <p>{formatDate(record.createdAt)}</p>}
-        </div>
-        <Link className="secondary-link" to="/history">Quay lại lịch sử</Link>
-      </div>
-      {loading && <div className="panel history-empty">Đang tải chi tiết...</div>}
-      {error && <p className="error">{error}</p>}
-      {record && <Results result={record.result} />}
     </section>
   );
 }
@@ -1857,7 +1979,7 @@ function AuthPanel({ mode, form, loading, error, onChange, onSubmit }) {
           <UserRound size={20} />
           <h2>{isRegister ? "Tạo tài khoản" : "Đăng nhập"}</h2>
         </div>
-        <p>Đăng nhập để lưu lịch sử phân tích. Tài khoản đầu tiên trong hệ thống sẽ tự động là admin.</p>
+        <p>Đăng nhập để trải nghiệm các tính năng của FitStyle.</p>
         {error && <p className="error">{error}</p>}
       </div>
       <form className="auth-form" onSubmit={onSubmit}>
@@ -1919,16 +2041,579 @@ function toFriendlyNetworkError(error) {
 
 function UserBadge({ user, onLogout }) {
   return (
-    <div className="user-badge">
-      <UserRound size={18} />
-      <div>
-        <strong>{user.name}</strong>
-        <span>{user.role}</span>
-      </div>
+    <div className={`user-badge ${user.premium ? "is-premium" : ""}`}>
+      <Link to="/profile" className="user-badge-link" title="Chỉnh sửa hồ sơ">
+        {user.premium ? <Sparkles size={20} /> : <UserRound size={20} />}
+        <div>
+          <strong>{user.name}</strong>
+          <span>{user.premium ? "PREMIUM" : user.role}</span>
+        </div>
+      </Link>
+      {!user.premium && (
+        <Link className="user-premium-link" to="/premium">
+          Nâng cấp
+        </Link>
+      )}
       <button type="button" onClick={onLogout} title="Đăng xuất">
         <LogOut size={17} />
       </button>
     </div>
+  );
+}
+
+function ProfilePage({ user, apiFetch, onUserUpdate }) {
+  const navigate = useNavigate();
+  const [profileForm, setProfileForm] = React.useState({ name: "", email: "" });
+  const [passwordForm, setPasswordForm] = React.useState({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+  const [profileMsg, setProfileMsg] = React.useState({ text: "", type: "" });
+  const [passwordMsg, setPasswordMsg] = React.useState({ text: "", type: "" });
+  const [loadingProfile, setLoadingProfile] = React.useState(false);
+  const [loadingPassword, setLoadingPassword] = React.useState(false);
+  const [showCurrentPw, setShowCurrentPw] = React.useState(false);
+  const [showNewPw, setShowNewPw] = React.useState(false);
+
+  React.useEffect(() => {
+    if (user) {
+      setProfileForm({ name: user.name || "", email: user.email || "" });
+    }
+  }, [user]);
+
+  if (!user) return <Navigate to="/login" />;
+
+  async function handleProfileSubmit(e) {
+    e.preventDefault();
+    if (loadingProfile) return;
+    setProfileMsg({ text: "", type: "" });
+    setLoadingProfile(true);
+    try {
+      const res = await apiFetch("/api/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(profileForm)
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Lỗi cập nhật.");
+      if (data.user) onUserUpdate(data.user);
+      setProfileMsg({ text: data.message || "Cập nhật thành công!", type: "success" });
+    } catch (err) {
+      setProfileMsg({ text: err.message, type: "error" });
+    } finally {
+      setLoadingProfile(false);
+    }
+  }
+
+  async function handlePasswordSubmit(e) {
+    e.preventDefault();
+    if (loadingPassword) return;
+    setPasswordMsg({ text: "", type: "" });
+    if (passwordForm.newPassword !== passwordForm.confirmNewPassword) {
+      setPasswordMsg({ text: "Mật khẩu mới và xác nhận không khớp.", type: "error" });
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordMsg({ text: "Mật khẩu mới phải có ít nhất 6 ký tự.", type: "error" });
+      return;
+    }
+    setLoadingPassword(true);
+    try {
+      const res = await apiFetch("/api/auth/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: passwordForm.currentPassword, newPassword: passwordForm.newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || "Lỗi đổi mật khẩu.");
+      setPasswordMsg({ text: data.message || "Đổi mật khẩu thành công!", type: "success" });
+      setPasswordForm({ currentPassword: "", newPassword: "", confirmNewPassword: "" });
+    } catch (err) {
+      setPasswordMsg({ text: err.message, type: "error" });
+    } finally {
+      setLoadingPassword(false);
+    }
+  }
+
+  return (
+    <section className="profile-page">
+      <div className="profile-page-header">
+        <div className="profile-avatar">
+          {user.premium ? <Sparkles size={40} /> : <UserRound size={40} />}
+        </div>
+        <div className="profile-header-info">
+          <h1>{user.name}</h1>
+          <p className="profile-email">{user.email}</p>
+          <span className={`profile-badge ${user.premium ? "is-premium" : ""}`}>
+            {user.premium ? "✨ PREMIUM" : user.role === "admin" ? "👑 ADMIN" : "Tài khoản miễn phí"}
+          </span>
+        </div>
+      </div>
+
+      <div className="profile-sections">
+        <div className="profile-card">
+          <div className="profile-card-header">
+            <UserRound size={22} />
+            <h2>Thông tin cá nhân</h2>
+          </div>
+          <form onSubmit={handleProfileSubmit}>
+            <label className="profile-field">
+              <span className="profile-field-label"><UserRound size={16} /> Tên hiển thị</span>
+              <input
+                type="text"
+                value={profileForm.name}
+                onChange={(e) => setProfileForm(prev => ({ ...prev, name: e.target.value }))}
+                placeholder="Nhập tên của bạn"
+                required
+              />
+            </label>
+            <label className="profile-field">
+              <span className="profile-field-label"><Mail size={16} /> Email</span>
+              <input
+                type="email"
+                value={profileForm.email}
+                disabled
+                placeholder="Nhập email"
+                required
+              />
+            </label>
+            {profileMsg.text && (
+              <div className={`profile-msg ${profileMsg.type}`}>{profileMsg.text}</div>
+            )}
+            <button type="submit" className="profile-submit-btn" disabled={loadingProfile}>
+              <Save size={18} />
+              {loadingProfile ? "Đang lưu..." : "Lưu thay đổi"}
+            </button>
+          </form>
+        </div>
+
+        <div className="profile-card">
+          <div className="profile-card-header">
+            <Lock size={22} />
+            <h2>Đổi mật khẩu</h2>
+          </div>
+          <form onSubmit={handlePasswordSubmit}>
+            <label className="profile-field">
+              <span className="profile-field-label"><Lock size={16} /> Mật khẩu hiện tại</span>
+              <div className="profile-password-wrap">
+                <input
+                  type={showCurrentPw ? "text" : "password"}
+                  value={passwordForm.currentPassword}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
+                  placeholder="Nhập mật khẩu hiện tại"
+                  required
+                />
+                <button type="button" className="pw-toggle" onClick={() => setShowCurrentPw(!showCurrentPw)}>
+                  {showCurrentPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+            <label className="profile-field">
+              <span className="profile-field-label"><Lock size={16} /> Mật khẩu mới</span>
+              <div className="profile-password-wrap">
+                <input
+                  type={showNewPw ? "text" : "password"}
+                  value={passwordForm.newPassword}
+                  onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
+                  placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)"
+                  required
+                  minLength={6}
+                />
+                <button type="button" className="pw-toggle" onClick={() => setShowNewPw(!showNewPw)}>
+                  {showNewPw ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </label>
+            <label className="profile-field">
+              <span className="profile-field-label"><Lock size={16} /> Xác nhận mật khẩu mới</span>
+              <input
+                type="password"
+                value={passwordForm.confirmNewPassword}
+                onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmNewPassword: e.target.value }))}
+                placeholder="Nhập lại mật khẩu mới"
+                required
+                minLength={6}
+              />
+            </label>
+            {passwordMsg.text && (
+              <div className={`profile-msg ${passwordMsg.type}`}>{passwordMsg.text}</div>
+            )}
+            <button type="submit" className="profile-submit-btn" disabled={loadingPassword}>
+              <Lock size={18} />
+              {loadingPassword ? "Đang xử lý..." : "Đổi mật khẩu"}
+            </button>
+          </form>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AnalyzePage({ user, apiFetch }) {
+  const [form, setForm] = React.useState(initialForm);
+  const [file, setFile] = React.useState(null);
+  const [preview, setPreview] = React.useState("");
+  const [result, setResult] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  function updateField(event) {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+    setError("");
+  }
+
+  function updatePhoto(event) {
+    const selected = event.target.files?.[0] || null;
+    setFile(selected);
+    setPreview(selected ? URL.createObjectURL(selected) : "");
+    setError("");
+  }
+
+  const isSubmittingRef = React.useRef(false);
+  const lastSubmittedDataRef = React.useRef(null);
+
+  async function submitAnalysis(event) {
+    event.preventDefault();
+    if (isSubmittingRef.current) return;
+
+    if (!user) {
+      setError("Bạn cần đăng nhập để sử dụng tính năng phân tích.");
+      return;
+    }
+
+    if (lastSubmittedDataRef.current) {
+      const isFormEqual = Object.keys(form).every(key => String(form[key]) === String(lastSubmittedDataRef.current.form[key]));
+      const isFileEqual = (file ? file.name : null) === lastSubmittedDataRef.current.fileName &&
+                          (file ? file.size : null) === lastSubmittedDataRef.current.fileSize;
+      if (isFormEqual && isFileEqual) {
+        setError("Bạn đã phân tích với các chỉ số này rồi. Hãy thay đổi chỉ số nếu muốn phân tích lại.");
+        return;
+      }
+    }
+
+    isSubmittingRef.current = true;
+    setLoading(true);
+    setError("");
+    setResult(null);
+
+    try {
+      const payload = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        payload.append(key, String(value));
+      });
+      if (file) payload.append("bodyPhoto", file);
+
+      const response = await apiFetch("/api/analyze", {
+        method: "POST",
+        body: payload
+      });
+      const data = await safeReadJson(response);
+
+      if (!response.ok) {
+        const detail = data.errors?.join(" ") || data.message || "Không thể phân tích.";
+        throw new Error(detail);
+      }
+
+      setResult(data);
+
+      lastSubmittedDataRef.current = {
+        form: { ...form },
+        fileName: file ? file.name : null,
+        fileSize: file ? file.size : null,
+      };
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      isSubmittingRef.current = false;
+      setLoading(false);
+    }
+  }
+
+  if (!user) return <LockedPanel title="Phân tích cơ thể" />;
+
+  return (
+    <section className="analyze-page">
+      <form className="panel analyze-panel" onSubmit={submitAnalysis}>
+        <div>
+          <div className="panel-title">
+            <Camera size={20} />
+            <h2>Phân tích dáng người và sức khỏe</h2>
+          </div>
+          <p>Nhập chỉ số cơ thể và upload ảnh toàn thân để AI phân tích dáng người, chấm điểm outfit và gợi ý phong cách.</p>
+        </div>
+
+        <div className="field-grid">
+          <label>
+            Tuổi
+            <input name="age" type="number" value={form.age} onChange={updateField} min="16" max="80" />
+          </label>
+          <label>
+            Giới tính
+            <select name="gender" value={form.gender} onChange={updateField}>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+            </select>
+          </label>
+          <label>
+            Chiều cao (cm)
+            <input name="heightCm" type="number" value={form.heightCm} onChange={updateField} min="120" max="230" />
+          </label>
+          <label>
+            Cân nặng (kg)
+            <input name="weightKg" type="number" value={form.weightKg} onChange={updateField} min="30" max="250" />
+          </label>
+        </div>
+
+        <div className="field-grid">
+          <label>
+            Vòng cổ (cm)
+            <input name="neckCm" type="number" value={form.neckCm} onChange={updateField} placeholder="Tùy chọn" />
+          </label>
+          <label>
+            Vòng ngực (cm)
+            <input name="chestCm" type="number" value={form.chestCm} onChange={updateField} placeholder="Tùy chọn" />
+          </label>
+          <label>
+            Vòng eo (cm)
+            <input name="waistCm" type="number" value={form.waistCm} onChange={updateField} placeholder="Tùy chọn" />
+          </label>
+          <label>
+            Vòng hông (cm)
+            <input name="hipCm" type="number" value={form.hipCm} onChange={updateField} placeholder="Tùy chọn" />
+          </label>
+        </div>
+
+        <div className="field-grid">
+          <label>
+            Mức vận động
+            <select name="activityLevel" value={form.activityLevel} onChange={updateField}>
+              <option value="sedentary">Ít vận động</option>
+              <option value="light">Nhẹ nhàng (1-3 buổi/tuần)</option>
+              <option value="moderate">Trung bình (3-5 buổi/tuần)</option>
+              <option value="active">Tích cực (5-7 buổi/tuần)</option>
+            </select>
+          </label>
+          <label>
+            Mục tiêu
+            <select name="goal" value={form.goal} onChange={updateField}>
+              <option value="lose">Giảm cân/giảm mỡ</option>
+              <option value="maintain">Duy trì săn chắc hơn</option>
+              <option value="gain">Tăng cân/tăng cơ</option>
+            </select>
+          </label>
+        </div>
+
+        <label className="upload-box">
+          <Camera size={20} />
+          <span>{file ? file.name : "Upload ảnh toàn thân (tùy chọn)"}</span>
+          <input name="bodyPhoto" type="file" accept="image/png,image/jpeg,image/webp" onChange={updatePhoto} />
+        </label>
+
+        {preview && (
+          <div className="tryon-preview-grid">
+            <img src={preview} alt="Ảnh toàn thân đã chọn" />
+          </div>
+        )}
+
+        {error && <p className="error">{error}</p>}
+
+        <button className="primary-button" type="submit" disabled={loading}>
+          {loading ? "Đang phân tích..." : "Phân tích ngay"}
+        </button>
+      </form>
+
+      {loading ? (
+        <LoadingPanel
+          title="AI đang phân tích"
+          description="Hệ thống đang xử lý chỉ số cơ thể và ảnh toàn thân để tạo kết quả phân tích."
+        />
+      ) : (
+        <Results result={result} />
+      )}
+    </section>
+  );
+}
+
+function HistoryPage({ user, apiFetch }) {
+  const [records, setRecords] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  React.useEffect(() => {
+    if (user) loadHistory();
+  }, [user]);
+
+  async function loadHistory() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await apiFetch("/api/analyses");
+      const data = await safeReadJson(response);
+
+      if (!response.ok) throw new Error(data.message || "Không thể tải lịch sử phân tích.");
+      setRecords(data.records || []);
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!user) return <LockedPanel title="Lịch sử phân tích" />;
+
+  return (
+    <section className="history-page">
+      <div className="section-heading wardrobe-heading">
+        <div>
+          <h2>Lịch sử phân tích</h2>
+          <p>Xem lại các lần phân tích chỉ số cơ thể và dáng người trước đây.</p>
+        </div>
+        <Link className="primary-link" to="/analyze">
+          <Camera size={17} />
+          Phân tích mới
+        </Link>
+      </div>
+
+      {error && <p className="error">{error}</p>}
+
+      {loading ? (
+        <div className="panel history-empty">Đang tải lịch sử...</div>
+      ) : records.length === 0 ? (
+        <div className="panel history-empty">
+          <div className="empty-state">
+            <History size={42} />
+            <h2>Chưa có lịch sử phân tích</h2>
+            <p>Bắt đầu phân tích dáng người và sức khỏe để xem kết quả ở đây.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="history-list">
+          {records.map((record) => (
+            <Link className="panel history-card" to={`/history/${record.id}`} key={record.id}>
+              <div className="history-card-head">
+                <strong>{record.summary?.bodyShape || "Chưa rõ dáng"}</strong>
+                <span>{formatDate(record.createdAt)}</span>
+              </div>
+              <div className="history-card-stats">
+                <span>
+                  <Activity size={15} />
+                  BMI {record.summary?.bmi || "?"}
+                </span>
+                <span>
+                  <Shirt size={15} />
+                  Outfit {record.summary?.outfitScore ?? "?"}/10
+                </span>
+                {record.summary?.bodyFat && (
+                  <span>
+                    <Percent size={15} />
+                    Fat {record.summary.bodyFat}%
+                  </span>
+                )}
+                <span>
+                  <Target size={15} />
+                  {record.summary?.direction || "Duy trì"}
+                </span>
+              </div>
+              <div className="history-card-meta">
+                <span>{record.profile?.gender === "female" ? "Nữ" : "Nam"}</span>
+                <span>{record.profile?.heightCm}cm</span>
+                <span>{record.profile?.weightKg}kg</span>
+                <span>{record.photo?.received ? "Có ảnh" : "Không ảnh"}</span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function HistoryDetailPage({ user, apiFetch }) {
+  const { id } = useParams();
+  const [record, setRecord] = React.useState(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+
+  React.useEffect(() => {
+    if (user && id) loadDetail();
+  }, [user, id]);
+
+  async function loadDetail() {
+    setLoading(true);
+    setError("");
+
+    try {
+      const response = await apiFetch(`/api/analyses/${id}`);
+      const data = await safeReadJson(response);
+
+      if (!response.ok) throw new Error(data.message || "Không tìm thấy lịch sử phân tích.");
+      setRecord(data.record);
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  if (!user) return <LockedPanel title="Chi tiết phân tích" />;
+
+  return (
+    <section className="history-detail-page">
+      <div className="section-heading wardrobe-heading">
+        <div>
+          <h2>Chi tiết phân tích</h2>
+          <p>Kết quả đầy đủ của một lần phân tích dáng người và sức khỏe.</p>
+        </div>
+        <Link className="secondary-link" to="/history">
+          <History size={17} />
+          Quay lại lịch sử
+        </Link>
+      </div>
+
+      {error && <p className="error">{error}</p>}
+
+      {loading ? (
+        <LoadingPanel
+          title="Đang tải kết quả"
+          description="Hệ thống đang lấy dữ liệu phân tích từ lịch sử."
+        />
+      ) : record ? (
+        <>
+          <div className="panel history-detail-meta">
+            <div>
+              <span>Ngày phân tích</span>
+              <strong>{formatDate(record.createdAt)}</strong>
+            </div>
+            <div>
+              <span>Giới tính</span>
+              <strong>{record.profile?.gender === "female" ? "Nữ" : "Nam"}</strong>
+            </div>
+            <div>
+              <span>Chiều cao</span>
+              <strong>{record.profile?.heightCm} cm</strong>
+            </div>
+            <div>
+              <span>Cân nặng</span>
+              <strong>{record.profile?.weightKg} kg</strong>
+            </div>
+            <div>
+              <span>Tuổi</span>
+              <strong>{record.profile?.age}</strong>
+            </div>
+            <div>
+              <span>Ảnh</span>
+              <strong>{record.photo?.received ? "Có ảnh" : "Không ảnh"}</strong>
+            </div>
+          </div>
+          <Results result={record.result} />
+        </>
+      ) : (
+        <div className="panel empty-state">
+          <Sparkles size={42} />
+          <h2>Không tìm thấy kết quả</h2>
+          <p>Bản ghi phân tích không tồn tại hoặc bạn không có quyền xem.</p>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -2077,4 +2762,482 @@ function List({ items }) {
   );
 }
 
+function AdminUsersPage({ user, apiFetch }) {
+  const [users, setUsers] = React.useState([]);
+  const [stats, setStats] = React.useState({ totalUsers: 0, premiumUsersCount: 0 });
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [message, setMessage] = React.useState("");
+  const [editingUserId, setEditingUserId] = React.useState("");
+  const [editForm, setEditForm] = React.useState({ role: "", plan: "", premiumUntil: "" });
+  
+  // States cho Search và Create
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [createForm, setCreateForm] = React.useState({
+    name: "",
+    email: "",
+    password: "",
+    role: "customer",
+    plan: "free",
+    premiumUntil: ""
+  });
+
+  React.useEffect(() => {
+    if (user?.role === "admin") loadUsers();
+  }, [user]);
+
+  if (!user || user.role !== "admin") return <LockedPanel title="Quản lý người dùng" />;
+
+  async function loadUsers() {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await apiFetch("/api/admin/users");
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể tải danh sách người dùng.");
+      setUsers(data.users || []);
+      setStats(data.stats || { totalUsers: 0, premiumUsersCount: 0 });
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function startEdit(u) {
+    setEditingUserId(u._id);
+    setEditForm({
+      role: u.role,
+      plan: u.plan,
+      premiumUntil: u.premiumUntil ? u.premiumUntil.slice(0, 10) : ""
+    });
+  }
+
+  async function saveUserEdit(userId) {
+    setError("");
+    setMessage("");
+    try {
+      const response = await apiFetch(`/api/admin/users/${userId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          role: editForm.role,
+          plan: editForm.plan,
+          premiumUntil: editForm.plan === "premium" ? (editForm.premiumUntil ? new Date(editForm.premiumUntil).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()) : null
+        })
+      });
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể cập nhật thông tin người dùng.");
+      setMessage("Cập nhật thành công!");
+      setEditingUserId("");
+      loadUsers();
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    }
+  }
+
+  async function handleCreateUser(e) {
+    e.preventDefault();
+    setError("");
+    setMessage("");
+    try {
+      const response = await apiFetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: createForm.name,
+          email: createForm.email,
+          password: createForm.password,
+          role: createForm.role,
+          plan: createForm.plan,
+          premiumUntil: createForm.plan === "premium" ? (createForm.premiumUntil ? new Date(createForm.premiumUntil).toISOString() : new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()) : null
+        })
+      });
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể tạo tài khoản mới.");
+      
+      setMessage("Thêm người dùng mới thành công!");
+      setIsCreateOpen(false);
+      setCreateForm({ name: "", email: "", password: "", role: "customer", plan: "free", premiumUntil: "" });
+      loadUsers();
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    }
+  }
+
+  async function handleDeleteUser(userId, userName) {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa tài khoản "${userName}"?`)) return;
+    setError("");
+    setMessage("");
+    try {
+      const response = await apiFetch(`/api/admin/users/${userId}`, {
+        method: "DELETE"
+      });
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể xóa người dùng.");
+      
+      setMessage("Đã xóa tài khoản thành công!");
+      loadUsers();
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    }
+  }
+
+  const filteredUsers = users.filter((u) =>
+    (u.name || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (u.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (u.role || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (u.plan || "").toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  return (
+    <section className="admin-users-page">
+      <div className="section-heading wardrobe-heading">
+        <div>
+          <h2>Quản lý người dùng</h2>
+          <p>Xem danh sách tài khoản, thống kê số lượng tài khoản đã nâng cấp Premium và phân quyền.</p>
+        </div>
+        <div style={{ display: "flex", gap: "var(--space-xs)" }}>
+          <button 
+            className="primary-button" 
+            type="button" 
+            onClick={() => setIsCreateOpen(!isCreateOpen)}
+          >
+            {isCreateOpen ? "Đóng form" : "Thêm User"}
+          </button>
+          <button className="secondary-button" type="button" onClick={loadUsers} disabled={loading}>
+            {loading ? "Đang tải..." : "Làm mới"}
+          </button>
+        </div>
+      </div>
+
+      {/* Form thêm mới người dùng */}
+      {isCreateOpen && (
+        <form onSubmit={handleCreateUser} className="panel product-form" style={{ display: "flex", flexDirection: "column", gap: "var(--space-md)" }}>
+          <div className="section-heading" style={{ marginBottom: "var(--space-xs)" }}>
+            <h2>Thêm người dùng mới</h2>
+          </div>
+          <div className="field-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-md)" }}>
+            <div>
+              <label>Tên hiển thị <span style={{ color: "red" }}>*</span></label>
+              <input
+                type="text"
+                required
+                placeholder="Ví dụ: Nguyễn Văn A"
+                value={createForm.name}
+                onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+              />
+            </div>
+            <div>
+              <label>Email <span style={{ color: "red" }}>*</span></label>
+              <input
+                type="email"
+                required
+                placeholder="example@gmail.com"
+                value={createForm.email}
+                onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+              />
+            </div>
+            <div>
+              <label>Mật khẩu <span style={{ color: "red" }}>*</span></label>
+              <input
+                type="password"
+                required
+                placeholder="Tối thiểu 6 ký tự"
+                value={createForm.password}
+                onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+              />
+            </div>
+            <div>
+              <label>Vai trò</label>
+              <select
+                value={createForm.role}
+                onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+              >
+                <option value="customer">customer</option>
+                <option value="admin">admin</option>
+                <option value="user">user</option>
+              </select>
+            </div>
+            <div>
+              <label>Gói dịch vụ</label>
+              <select
+                value={createForm.plan}
+                onChange={(e) => setCreateForm({ ...createForm, plan: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+              >
+                <option value="free">free</option>
+                <option value="premium">premium</option>
+              </select>
+            </div>
+            {createForm.plan === "premium" && (
+              <div>
+                <label>Hạn Premium (Để trống mặc định +30 ngày)</label>
+                <input
+                  type="date"
+                  value={createForm.premiumUntil}
+                  onChange={(e) => setCreateForm({ ...createForm, premiumUntil: e.target.value })}
+                  style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+                />
+              </div>
+            )}
+          </div>
+          <div style={{ display: "flex", gap: "var(--space-xs)", marginTop: "var(--space-xs)" }}>
+            <button className="primary-button" type="submit">Lưu lại</button>
+            <button className="secondary-button" type="button" onClick={() => setIsCreateOpen(false)}>Hủy</button>
+          </div>
+        </form>
+      )}
+
+      <div className="dashboard-kpi-grid">
+        <DashboardKpi label="Tổng tài khoản" value={stats.totalUsers} note="Toàn bộ người dùng đăng ký" />
+        <DashboardKpi label="Tài khoản Premium" value={stats.premiumUsersCount} note="Gói trả phí đang hoạt động" />
+        <DashboardKpi label="Tỉ lệ Premium" value={stats.totalUsers > 0 ? `${((stats.premiumUsersCount / stats.totalUsers) * 100).toFixed(1)}%` : "0%"} note="Tỉ lệ chuyển đổi" />
+      </div>
+
+      {error && <p className="error-message">{error}</p>}
+      {message && <p className="success-message">{message}</p>}
+
+      <div className="panel admin-users-table-container">
+        <div className="section-heading" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "var(--space-md)", flexWrap: "wrap", padding: "var(--space-md) var(--space-lg)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "var(--space-sm)" }}>
+            <h2>Danh sách người dùng</h2>
+            <span className="count-badge" style={{ background: "rgba(255,255,255,0.06)", padding: "2px 8px", borderRadius: "12px", fontSize: "0.8rem", fontWeight: "600" }}>
+              {filteredUsers.length}
+            </span>
+          </div>
+          <div className="search-bar-container" style={{ flex: "1", maxWidth: "350px" }}>
+            <input
+              type="text"
+              placeholder="Tìm theo tên, email, vai trò..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="search-input"
+              style={{
+                width: "100%",
+                background: "rgba(255,255,255,0.05)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                borderRadius: "8px",
+                padding: "8px 16px",
+                color: "#fff",
+                fontSize: "0.9rem",
+                outline: "none"
+              }}
+            />
+          </div>
+        </div>
+
+        {loading && users.length === 0 ? (
+          <p className="loading" style={{ padding: "var(--space-lg)" }}>Đang tải danh sách...</p>
+        ) : filteredUsers.length === 0 ? (
+          <p className="empty-state" style={{ padding: "var(--space-lg)", textAlign: "center", color: "var(--text-secondary)" }}>Không tìm thấy người dùng phù hợp.</p>
+        ) : (
+          <table className="admin-users-table">
+            <thead>
+              <tr>
+                <th>Tên</th>
+                <th>Email</th>
+                <th>Vai trò</th>
+                <th>Gói dịch vụ</th>
+                <th>Premium Đến ngày</th>
+                <th>Ngày tạo</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredUsers.map((u) => {
+                const isEditing = editingUserId === u._id;
+                const isPremiumActive = u.plan === "premium" && u.premiumUntil && new Date(u.premiumUntil) > new Date();
+
+                return (
+                  <tr key={u._id}>
+                    <td><strong>{u.name}</strong></td>
+                    <td>{u.email}</td>
+                    <td>
+                      {isEditing ? (
+                        <select
+                          value={editForm.role}
+                          onChange={(e) => setEditForm({ ...editForm, role: e.target.value })}
+                        >
+                          <option value="customer">customer</option>
+                          <option value="admin">admin</option>
+                          <option value="user">user</option>
+                        </select>
+                      ) : (
+                        <span className={`role-badge ${u.role}`}>{u.role}</span>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <select
+                          value={editForm.plan}
+                          onChange={(e) => setEditForm({ ...editForm, plan: e.target.value })}
+                        >
+                          <option value="free">free</option>
+                          <option value="premium">premium</option>
+                        </select>
+                      ) : (
+                        <span className={`plan-badge ${isPremiumActive ? "premium" : "free"}`}>
+                          {isPremiumActive ? "Premium" : "Free"}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        editForm.plan === "premium" ? (
+                          <input
+                            type="date"
+                            value={editForm.premiumUntil}
+                            onChange={(e) => setEditForm({ ...editForm, premiumUntil: e.target.value })}
+                          />
+                        ) : "-"
+                      ) : (
+                        u.premiumUntil ? formatDate(u.premiumUntil) : "-"
+                      )}
+                    </td>
+                    <td>{formatDate(u.createdAt)}</td>
+                    <td>
+                      {isEditing ? (
+                        <div className="action-buttons">
+                          <button className="primary-button btn-xs" onClick={() => saveUserEdit(u._id)}>Lưu</button>
+                          <button className="secondary-button btn-xs" onClick={() => setEditingUserId("")}>Hủy</button>
+                        </div>
+                      ) : (
+                        <div className="action-buttons">
+                          <button className="secondary-button btn-xs" onClick={() => startEdit(u)}>Sửa</button>
+                          <button className="secondary-button danger-button btn-xs" onClick={() => handleDeleteUser(u._id, u.name)}>Xóa</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function ChatWidgets({ apiFetch }) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const [messages, setMessages] = React.useState([
+    { role: "model", text: "Xin chào! Tôi là trợ lý ảo AI của FitStyle. Bạn cần tư vấn gì về vóc dáng, sức khỏe hay phong cách thời trang hôm nay?" }
+  ]);
+  const [input, setInput] = React.useState("");
+  const [loading, setLoading] = React.useState(false);
+  const chatEndRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isOpen]);
+
+  async function handleSendMessage(e) {
+    e.preventDefault();
+    if (!input.trim() || loading) return;
+
+    const userMessage = { role: "user", text: input };
+    setMessages(prev => [...prev, userMessage]);
+    setInput("");
+    setLoading(true);
+
+    try {
+      const history = messages.slice(1).map(m => ({ role: m.role, text: m.text }));
+
+      const response = await fetch(`${API_URL}/api/chat-bot`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: userMessage.text, history })
+      });
+      
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Lỗi hệ thống");
+
+      setMessages(prev => [...prev, { role: "model", text: data.reply }]);
+    } catch (err) {
+      setMessages(prev => [...prev, { role: "model", text: "Xin lỗi, hiện tại tôi gặp sự cố kết nối. Bạn hãy thử lại sau nhé!" }]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="chat-widgets-container">
+      {/* Ô chat Messenger (bên trên) */}
+      <a 
+        href="https://www.facebook.com/profile.php?id=61590549851322" 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="chat-widget-btn messenger-btn"
+        title="Liên hệ Facebook Page"
+      >
+        <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+          <path d="M12 2C6.477 2 2 6.145 2 11.243c0 2.91 1.448 5.513 3.719 7.156.195.14.318.365.318.608v2.302c0 .546.565.922 1.07.712l2.56-1.066a.82.82 0 0 1 .593-.016c.553.155 1.134.238 1.74.238 5.523 0 10-4.145 10-9.243C22 6.145 17.523 2 12 2zm1.03 12.35l-2.03-2.17-3.96 2.17 4.36-4.64 2.03 2.17 3.96-2.17-4.36 4.64z"/>
+        </svg>
+      </a>
+
+      {/* Ô chat AI Bot (bên dưới) */}
+      <button 
+        className={`chat-widget-btn chat-bot-btn ${isOpen ? "active" : ""}`} 
+        onClick={() => setIsOpen(!isOpen)}
+        title="Chat với AI"
+      >
+        <Sparkles size={24} />
+      </button>
+
+      {/* Cửa sổ chat AI */}
+      {isOpen && (
+        <div className="chat-box-window">
+          <div className="chat-box-header">
+            <div>
+              <Sparkles size={18} />
+              <strong>Trợ lý FitStyle AI</strong>
+            </div>
+            <button className="chat-close-btn" onClick={() => setIsOpen(false)}>&times;</button>
+          </div>
+          <div className="chat-box-body">
+            {messages.map((m, idx) => (
+              <div key={idx} className={`chat-message ${m.role}`}>
+                <div className="chat-message-bubble">
+                  {m.text}
+                </div>
+              </div>
+            ))}
+            {loading && (
+              <div className="chat-message model">
+                <div className="chat-message-bubble typing">
+                  <span></span><span></span><span></span>
+                </div>
+              </div>
+            )}
+            <div ref={chatEndRef} />
+          </div>
+          <form className="chat-box-footer" onSubmit={handleSendMessage}>
+            <input 
+              type="text" 
+              placeholder="Hỏi về thời trang & sức khỏe..." 
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              disabled={loading}
+              autoFocus
+            />
+            <button type="submit" disabled={!input.trim() || loading}>Gửi</button>
+          </form>
+        </div>
+      )}
+    </div>
+  );
+}
+
 createRoot(document.getElementById("root")).render(<App />);
+
+
+

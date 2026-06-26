@@ -8,6 +8,23 @@ function requirePixelcutKey() {
   }
 }
 
+function normalizeImageUrl(url) {
+  if (!url) return url;
+
+  // Cloudinary allows dynamic format conversion by changing the file extension.
+  // We change .webp to .png since Pixelcut does not support fetching/processing .webp images.
+  const lowerUrl = url.toLowerCase();
+  if (url.includes("cloudinary.com")) {
+    if (lowerUrl.endsWith(".webp")) {
+      return url.substring(0, url.length - 5) + ".png";
+    }
+    if (lowerUrl.includes(".webp")) {
+      return url.replace(/\.webp($|\?)/i, ".png$1");
+    }
+  }
+  return url;
+}
+
 function validateUrl(value, fieldName) {
   try {
     const parsed = new URL(value);
@@ -23,8 +40,11 @@ function validateUrl(value, fieldName) {
 export async function createTryOn({ personImageUrl, garmentImageUrl, removeBackground = false }) {
   requirePixelcutKey();
 
-  const person_image_url = validateUrl(personImageUrl, "personImageUrl");
-  const garment_image_url = validateUrl(garmentImageUrl, "garmentImageUrl");
+  const normalizedPerson = normalizeImageUrl(personImageUrl);
+  const normalizedGarment = normalizeImageUrl(garmentImageUrl);
+
+  const person_image_url = validateUrl(normalizedPerson, "personImageUrl");
+  const garment_image_url = validateUrl(normalizedGarment, "garmentImageUrl");
 
   const response = await fetch(`${PIXELCUT_BASE_URL}/v1/try-on`, {
     method: "POST",

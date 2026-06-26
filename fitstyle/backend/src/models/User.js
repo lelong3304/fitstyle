@@ -1,4 +1,4 @@
-import mongoose from "mongoose";
+﻿import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
@@ -23,6 +23,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["user", "customer", "admin"],
       default: "customer"
+    },
+    plan: {
+      type: String,
+      enum: ["free", "premium"],
+      default: "free"
+    },
+    premiumUntil: {
+      type: Date,
+      default: null
+    },
+    tryOnUsageCount: {
+      type: Number,
+      default: 0
     }
   },
   {
@@ -31,3 +44,4 @@ const userSchema = new mongoose.Schema(
 );
 
 export const User = mongoose.models.User || mongoose.model("User", userSchema);
+

@@ -164,7 +164,7 @@ function getFallbackResult(file, profile) {
 }
 
 async function analyzeWithGemini(file, profile) {
-  const model = process.env.GEMINI_VISION_MODEL || "gemini-2.5-flash";
+  const model = process.env.GEMINI_VISION_MODEL || "gemini-3.5-flash";
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const response = await fetch(endpoint, {
     method: "POST",

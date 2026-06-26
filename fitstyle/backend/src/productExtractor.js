@@ -60,7 +60,7 @@ async function inferProductWithGemini(metadata) {
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
   const prompt = `Bạn là stylist và admin catalog cho web FitStyle AI.
 
-Từ metadata sản phẩm Shopee bên dưới, hãy tạo JSON sản phẩm để lưu MongoDB.
+T? metadata s?n ph?m Shopee b�n du?i, h�y t?o JSON s?n ph?m d? luu MongoDB.
 Chỉ trả về JSON hợp lệ, không markdown.
 
 Allowed bodyShapeTags: ${allowedShapeKeys.join(", ")}
@@ -68,7 +68,7 @@ Allowed gender: unisex, male, female
 
 Quy tắc:
 - name ngắn gọn bằng tiếng Việt.
-- category là nhóm sản phẩm phổ biến: Áo thun, Áo sơ mi, Áo khoác, Quần dài, Quần short, Chân váy, Váy, Giày, Phụ kiện.
+- category l� nh�m s?n ph?m ph? bi?n: �o thun, �o so mi, �o kho�c, Qu?n d�i, Qu?n short, Ch�n v�y, V�y, Gi�y, Ph? ki?n.
 - bodyShapeTags chọn 1-4 dáng phù hợp nhất.
 - reason phải giải thích vì sao món này hợp các dáng đó.
 - Nếu thiếu thông tin, suy luận bảo thủ từ tên sản phẩm.
@@ -147,7 +147,7 @@ function inferProductWithRules(metadata) {
 function inferCategory(text) {
   if (/(quần|pants|jean|kaki|trouser)/i.test(text)) return "Quần dài";
   if (/(short|quần đùi)/i.test(text)) return "Quần short";
-  if (/(chân váy|skirt)/i.test(text)) return "Chân váy";
+  if (/(ch�n v�y|skirt)/i.test(text)) return "Ch�n v�y";
   if (/(váy|đầm|dress)/i.test(text)) return "Váy";
   if (/(sơ mi|shirt)/i.test(text)) return "Áo sơ mi";
   if (/(khoác|jacket|blazer|cardigan|hoodie)/i.test(text)) return "Áo khoác";
@@ -167,7 +167,7 @@ function inferBodyShapeTags(text, category) {
   if (/(cạp cao|nhấn eo|chiết eo|croptop)/i.test(text)) return ["hourglass", "rectangle", "triangle"];
   if (/(ống rộng|wide|suông|straight)/i.test(text)) return ["inverted_triangle", "triangle", "oval", "balanced"];
   if (/(cổ v|v-neck|v neck)/i.test(text)) return ["oval", "inverted_triangle", "balanced"];
-  if (category === "Chân váy" || category === "Váy") return ["hourglass", "triangle", "rectangle", "balanced"];
+  if (category === "Ch�n v�y" || category === "V�y") return ["hourglass", "triangle", "rectangle", "balanced"];
   if (category === "Áo khoác") return ["slim", "rectangle", "oval", "balanced"];
   return ["balanced"];
 }
@@ -182,7 +182,7 @@ function inferStyleTags(text) {
 }
 
 function inferColors(text) {
-  const colors = ["đen", "trắng", "xám", "be", "kem", "nâu", "xanh", "hồng"].filter((color) => text.includes(color));
+  const colors = ["den", "tr?ng", "x�m", "be", "kem", "n�u", "xanh", "h?ng"].filter((color) => text.includes(color));
   return colors;
 }
 
@@ -195,10 +195,10 @@ function inferFit(text) {
 }
 
 function inferReason(category, bodyShapeTags) {
-  if (bodyShapeTags.includes("slim")) return "Tạo thêm độ dày thị giác và giúp dáng mảnh nhìn cân đối hơn.";
+  if (bodyShapeTags.includes("slim")) return "T?o th�m d? d�y th? gi�c v� gi�p d�ng m?nh nh�n c�n d?i hon.";
   if (bodyShapeTags.includes("rectangle")) return "Giúp tạo điểm nhấn tỉ lệ và làm dáng thẳng bớt đơn điệu.";
-  if (bodyShapeTags.includes("triangle")) return "Giúp cân bằng phần hông và tạo tổng thể gọn hơn.";
-  if (bodyShapeTags.includes("inverted_triangle")) return "Giúp cân bằng phần vai rộng bằng cách tăng độ nặng thị giác cho phần dưới.";
+  if (bodyShapeTags.includes("triangle")) return "Gi�p c�n b?ng ph?n h�ng v� t?o t?ng th? g?n hon.";
+  if (bodyShapeTags.includes("inverted_triangle")) return "Gi�p c�n b?ng ph?n vai r?ng b?ng c�ch tang d? n?ng th? gi�c cho ph?n du?i.";
   if (bodyShapeTags.includes("oval")) return "Form gọn và đường nét đơn giản giúp tổng thể nhẹ, dễ mặc hơn.";
   return `${category} dễ phối, phù hợp nhiều dáng người và dùng tốt cho tủ đồ cơ bản.`;
 }

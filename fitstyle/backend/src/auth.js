@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { connectDatabase, hasMongoConfig } from "./db.js";
 import { User } from "./models/User.js";
+import { formatPlan } from "./subscription.js";
 
 const TOKEN_EXPIRES_IN = "7d";
 
@@ -14,7 +15,8 @@ function publicUser(user) {
     id: user._id.toString(),
     name: user.name,
     email: user.email,
-    role: user.role
+    role: user.role,
+    ...formatPlan(user)
   };
 }
 
@@ -121,3 +123,6 @@ export function requireAdmin(req, res, next) {
 
   return next();
 }
+
+export { publicUser };
+
