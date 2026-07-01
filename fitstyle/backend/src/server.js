@@ -49,11 +49,37 @@ const allowedOrigins = frontendOrigin.split(",").map(o => o.trim());
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      // 1. Cho phép nếu không có origin (như Flutter mobile app, Postman, server-to-server)
+      if (!origin) {
+        return callback(null, true);
       }
+
+      // 2. Cho phép nếu origin khớp chính xác danh sách FRONTEND_ORIGIN
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      // 3. Cho phép tất cả các domain phụ/chính của Vercel (*.vercel.app)
+      if (origin.endsWith(".vercel.app") || /^https?:\/\/.*\.vercel\.app$/.test(origin)) {
+        return callback(null, true);
+      }
+
+      // 4. Cho phép domain chính và phụ của tên miền custom (*.io.vn)
+      if (origin === "https://fitstyle.io.vn" || origin.endsWith(".fitstyle.io.vn")) {
+        return callback(null, true);
+      }
+
+      // 5. Cho phép local development (localhost / 127.0.0.1 / emulator)
+      if (
+        origin.startsWith("http://localhost:") ||
+        origin.startsWith("http://127.0.0.1:") ||
+        origin.startsWith("http://10.0.2.2:")
+      ) {
+        return callback(null, true);
+      }
+
+      // Không cho phép
+      return callback(new Error(`Origin ${origin} not allowed by CORS`));
     },
     credentials: true
   })
