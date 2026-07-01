@@ -73,7 +73,7 @@ function requireSepayConfig() {
   return { merchantId, secretKey };
 }
 
-export async function createPremiumCheckout(userId) {
+export async function createPremiumCheckout(userId, clientOrigin = null) {
   await connectDatabase();
   const user = await User.findById(userId);
   if (!user) {
@@ -90,9 +90,14 @@ export async function createPremiumCheckout(userId) {
   }
 
   const { merchantId, secretKey } = requireSepayConfig();
-  const originStr = process.env.FRONTEND_ORIGIN || "http://127.0.0.1:5173";
-  const origins = originStr.split(",").map(o => o.trim());
-  const frontendOrigin = origins.find(o => o.startsWith("https://")) || origins[0];
+  
+  // Sử dụng clientOrigin động từ request nếu hợp lệ, ngược lại dùng fallback cấu hình
+  let frontendOrigin = clientOrigin;
+  if (!frontendOrigin || !frontendOrigin.startsWith("http")) {
+    const originStr = process.env.FRONTEND_ORIGIN || "http://127.0.0.1:5173";
+    const origins = originStr.split(",").map(o => o.trim());
+    frontendOrigin = origins.find(o => o.startsWith("https://")) || origins[0];
+  }
   const invoiceNumber = `FS${Date.now()}${String(user._id).slice(-4)}`.toUpperCase();
 
   const order = await SubscriptionOrder.create({

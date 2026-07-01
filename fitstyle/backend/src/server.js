@@ -177,7 +177,8 @@ app.get("/api/billing/plan", requireAuth, async (req, res, next) => {
 
 app.post("/api/billing/checkout", requireAuth, async (req, res, next) => {
   try {
-    const checkout = await createPremiumCheckout(req.user.id);
+    const clientOrigin = req.headers.origin || req.get("origin");
+    const checkout = await createPremiumCheckout(req.user.id, clientOrigin);
     return res.json(checkout);
   } catch (error) {
     return next(error);
