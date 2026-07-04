@@ -632,7 +632,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                   const SizedBox(height: 8),
                 ],
                 if (bodyFat?['note'] != null) ...[
-                  Text(bodyFat['note'].toString(), style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted, height: 1.4)),
+                  Text(bodyFat!['note'].toString(), style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted, height: 1.4)),
                   const SizedBox(height: 8),
                 ],
                 if (photo['note'] != null)
