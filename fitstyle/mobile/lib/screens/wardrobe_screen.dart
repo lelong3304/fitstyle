@@ -6,7 +6,7 @@ import '../services/api_service.dart';
 import 'tryon_screen.dart';
 
 class WardrobeScreen extends StatefulWidget {
-  final Function(int)? onNavigateToTab;
+  final Function(int, {String? garmentUrl, String? garmentName})? onNavigateToTab;
 
   const WardrobeScreen({super.key, this.onNavigateToTab});
 
@@ -289,9 +289,7 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                     Expanded(
                       child: GestureDetector(
                         onTap: () {
-                          TryOnScreen.externalGarmentImageUrl = image;
-                          TryOnScreen.externalProductName = name;
-                          widget.onNavigateToTab?.call(2); // Switch to Try-On tab (index 2)
+                          widget.onNavigateToTab?.call(2, garmentUrl: image, garmentName: name); // Switch to Try-On tab (index 2)
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 8),

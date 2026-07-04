@@ -7,10 +7,16 @@ import '../services/api_service.dart';
 import 'premium_screen.dart';
 
 class TryOnScreen extends StatefulWidget {
-  static String? externalGarmentImageUrl;
-  static String? externalProductName;
+  final String? externalGarmentImageUrl;
+  final String? externalProductName;
+  final VoidCallback? onClearExternalData;
 
-  const TryOnScreen({super.key});
+  const TryOnScreen({
+    super.key,
+    this.externalGarmentImageUrl,
+    this.externalProductName,
+    this.onClearExternalData,
+  });
 
   @override
   State<TryOnScreen> createState() => _TryOnScreenState();
@@ -34,16 +40,24 @@ class _TryOnScreenState extends State<TryOnScreen> {
     _checkForExternalData();
   }
 
+  @override
+  void didUpdateWidget(covariant TryOnScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _checkForExternalData();
+  }
+
   void _checkForExternalData() {
-    if (TryOnScreen.externalGarmentImageUrl != null) {
-      _garmentImageUrl = TryOnScreen.externalGarmentImageUrl;
-      _garmentProductName = TryOnScreen.externalProductName;
+    if (widget.externalGarmentImageUrl != null) {
+      _garmentImageUrl = widget.externalGarmentImageUrl;
+      _garmentProductName = widget.externalProductName;
       _garmentImage = null; // Clear file if URL is set
       _result = null; // Clear old result
       
-      // Clear static fields so they don't persist
-      TryOnScreen.externalGarmentImageUrl = null;
-      TryOnScreen.externalProductName = null;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          widget.onClearExternalData?.call();
+        }
+      });
     }
   }
 

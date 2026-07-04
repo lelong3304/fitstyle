@@ -24,6 +24,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   Map<String, dynamic>? _latestAnalysis;
   bool _isLoading = true;
   int _currentNavIndex = 0;
+  String? _selectedGarmentUrl;
+  String? _selectedGarmentName;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
@@ -68,6 +70,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     setState(() => _user = updatedUser);
   }
 
+  void _handleNavigateToTab(int index, {String? garmentUrl, String? garmentName}) {
+    setState(() {
+      _currentNavIndex = index;
+      if (garmentUrl != null) {
+        _selectedGarmentUrl = garmentUrl;
+        _selectedGarmentName = garmentName;
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -93,9 +105,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 isPremium: isPremium,
                 user: _user,
                 latestAnalysis: _latestAnalysis,
-                onNavigateToTab: (index) {
-                  setState(() => _currentNavIndex = index);
-                },
+                onNavigateToTab: (idx) => _handleNavigateToTab(idx),
                 onProfileTap: () async {
                   final result = await Navigator.of(context).push<Map<String, dynamic>>(
                     MaterialPageRoute(builder: (_) => ProfileScreen(user: _user!)),
@@ -107,11 +117,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 },
               ),
               const AnalyzeScreen(),
-              const TryOnScreen(),
-              WardrobeScreen(
-                onNavigateToTab: (index) {
-                  setState(() => _currentNavIndex = index);
+              TryOnScreen(
+                externalGarmentImageUrl: _selectedGarmentUrl,
+                externalProductName: _selectedGarmentName,
+                onClearExternalData: () {
+                  setState(() {
+                    _selectedGarmentUrl = null;
+                    _selectedGarmentName = null;
+                  });
                 },
+              ),
+              WardrobeScreen(
+                onNavigateToTab: _handleNavigateToTab,
               ),
               const HistoryScreen(),
             ],
