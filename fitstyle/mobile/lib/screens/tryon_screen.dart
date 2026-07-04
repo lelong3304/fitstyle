@@ -269,8 +269,18 @@ class _TryOnScreenState extends State<TryOnScreen> {
   }
 
   Widget _buildResultView() {
-    final outputUrl = _result?['output_url'] ?? _result?['outputUrl'] ?? _result?['result']?['output_url'];
+    final outputUrl = _result?['result_url'] ?? _result?['resultUrl'] ?? _result?['output_url'] ?? _result?['outputUrl'] ?? _result?['result']?['output_url'];
     final plan = _result?['plan'] as Map<String, dynamic>?;
+
+    String planText = 'Còn ? lượt phối đồ';
+    if (plan != null) {
+      if (plan['premium'] == true || plan['plan'] == 'premium') {
+        planText = 'Gói Premium: Phối đồ không giới hạn';
+      } else {
+        final remaining = plan['remainingFreeTryOn'] ?? plan['tryOnRemaining'];
+        planText = 'Còn ${remaining ?? '?'} lượt phối đồ miễn phí';
+      }
+    }
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -340,7 +350,7 @@ class _TryOnScreenState extends State<TryOnScreen> {
                 const Icon(Icons.auto_awesome, color: AppColors.warning, size: 18),
                 const SizedBox(width: 10),
                 Expanded(child: Text(
-                  'Còn ${plan['tryOnRemaining'] ?? '?'} lượt phối đồ',
+                  planText,
                   style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary),
                 )),
               ]),

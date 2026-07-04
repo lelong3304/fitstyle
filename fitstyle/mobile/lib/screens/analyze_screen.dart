@@ -212,12 +212,54 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
   }
 
   Widget _buildResult() {
-    final bmi = _result?['bmi'];
-    final bodyFat = _result?['bodyFat'];
-    final bodyShape = _result?['bodyShape'];
-    final tdee = _result?['tdee'];
-    final targetCalories = _result?['targetCalories'];
-    final advice = _result?['advice'] ?? _result?['visionAdvice'];
+    final metrics = _result?['metrics'] as Map<String, dynamic>? ?? {};
+
+    final bmi = metrics['bmi'] ?? _result?['bmi'];
+    final bmiCategory = metrics['bmiCategory'] ?? _result?['bmiCategory'];
+    final bodyFat = metrics['bodyFat'] ?? _result?['bodyFat'];
+    final bodyShape = metrics['bodyShape'] ?? _result?['bodyShape'];
+    final tdee = metrics['tdee'] ?? _result?['tdee'];
+    final targetCalories = metrics['targetCalories'] ?? _result?['targetCalories'];
+
+    // Robust BMI parsing
+    final bmiVal = bmi is Map ? bmi['value'] : bmi;
+    String bmiLabel = '';
+    if (bmiCategory is Map) {
+      bmiLabel = bmiCategory['label'] ?? '';
+    } else if (bmi is Map) {
+      bmiLabel = bmi['label'] ?? '';
+    }
+    if (bmiVal != null && bmiLabel.isEmpty) {
+      final double val = double.tryParse(bmiVal.toString()) ?? 0.0;
+      if (val < 18.5) {
+        bmiLabel = 'Thiếu cân';
+      } else if (val < 23.0) {
+        bmiLabel = 'Bình thường';
+      } else if (val < 25.0) {
+        bmiLabel = 'Thừa cân';
+      } else {
+        bmiLabel = 'Béo phì';
+      }
+    }
+
+    // Robust Body Fat parsing
+    final fatVal = bodyFat is Map ? bodyFat['percent'] : bodyFat;
+    final fatLabel = bodyFat is Map ? (bodyFat['label'] ?? '') : '';
+
+    // Robust Body Shape parsing
+    final bodyShapeLabel = bodyShape is Map ? (bodyShape['label'] ?? '') : bodyShape?.toString();
+    final bodyShapeDesc = bodyShape is Map ? (bodyShape['description'] ?? '') : null;
+
+    // AI advice list / string
+    final adviceObj = _result?['advice'] ?? _result?['visionAdvice'] ?? _result?['health']?['tips'];
+    String adviceText = '';
+    if (adviceObj is List) {
+      adviceText = adviceObj.join('\n\n');
+    } else if (adviceObj != null) {
+      adviceText = adviceObj.toString();
+    } else if (_result?['health']?['direction'] != null) {
+      adviceText = _result!['health']['direction'].toString();
+    }
 
     return SingleChildScrollView(
       physics: const BouncingScrollPhysics(),
@@ -239,9 +281,9 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
 
           // Metric cards
           Row(children: [
-            Expanded(child: _metricCard('BMI', '${_fmt(bmi?['value'])}', bmi?['label'] ?? '', AppColors.primary)),
+            Expanded(child: _metricCard('BMI', '${_fmt(bmiVal)}', bmiLabel, AppColors.primary)),
             const SizedBox(width: 12),
-            Expanded(child: _metricCard('Body Fat', '${_fmt(bodyFat?['percent'])}%', bodyFat?['label'] ?? '', AppColors.health)),
+            Expanded(child: _metricCard('Body Fat', fatVal != null ? '${_fmt(fatVal)}%' : '--%', fatLabel, AppColors.health)),
           ]),
           const SizedBox(height: 12),
           Row(children: [
@@ -268,11 +310,11 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                 children: [
                   ShaderMask(
                     shaderCallback: (b) => AppColors.gradientPrimary.createShader(b),
-                    child: Text(bodyShape?['label'] ?? bodyShape.toString(), style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
+                    child: Text(bodyShapeLabel ?? 'N/A', style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.w800, color: Colors.white)),
                   ),
-                  if (bodyShape is Map && bodyShape['description'] != null) ...[
+                  if (bodyShapeDesc != null && bodyShapeDesc.isNotEmpty) ...[
                     const SizedBox(height: 8),
-                    Text(bodyShape['description'], style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5)),
+                    Text(bodyShapeDesc, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5)),
                   ],
                 ],
               ),
@@ -281,7 +323,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
           ],
 
           // AI advice
-          if (advice != null && advice.toString().isNotEmpty) ...[
+          if (adviceText.isNotEmpty) ...[
             _sectionTitle('Lời khuyên từ AI'),
             const SizedBox(height: 12),
             Container(
@@ -292,7 +334,7 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
               ),
-              child: Text(advice.toString(), style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.6)),
+              child: Text(adviceText, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.6)),
             ),
             const SizedBox(height: 20),
           ],
