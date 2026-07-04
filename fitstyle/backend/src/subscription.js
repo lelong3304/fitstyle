@@ -3,8 +3,9 @@ import { connectDatabase } from "./db.js";
 import { Analysis } from "./models/Analysis.js";
 import { SubscriptionOrder } from "./models/SubscriptionOrder.js";
 import { User } from "./models/User.js";
+import { Coupon } from "./models/Coupon.js";
 
-export const PREMIUM_PRICE = 49000;
+export const PREMIUM_PRICE = 79000;
 export const PREMIUM_DAYS = 30;
 export const FREE_TRY_ON_LIMIT = 1;
 
@@ -43,7 +44,7 @@ export async function assertCanUseTryOn(userId) {
   if (isPremiumUser(user)) return { user, premium: true };
 
   if ((user.tryOnUsageCount || 0) >= FREE_TRY_ON_LIMIT) {
-    const error = new Error("G�i Free ch? du?c ph?i d? 1 l?n. N�ng c?p Premium 49.000d/th�ng d? ph?i d? kh�ng gi?i h?n.");
+    const error = new Error("Gói Free chỉ được phối đồ 1 lần. Nâng cấp Premium 79.000đ/tháng để phối đồ không giới hạn.");
     error.statusCode = 402;
     error.code = "PREMIUM_REQUIRED";
     error.plan = formatPlan(user);
@@ -73,7 +74,7 @@ function requireSepayConfig() {
   return { merchantId, secretKey };
 }
 
-export async function createPremiumCheckout(userId, clientOrigin = null) {
+export async function createPremiumCheckout(userId, clientOrigin = null, couponCode = null) {
   await connectDatabase();
   const user = await User.findById(userId);
   if (!user) {
@@ -89,21 +90,96 @@ export async function createPremiumCheckout(userId, clientOrigin = null) {
     };
   }
 
+  // Khởi tạo các giá trị thanh toán mặc định
+  let finalAmount = PREMIUM_PRICE;
+  let discountAmount = 0;
+  let validatedCoupon = null;
+
+  if (couponCode && couponCode.trim() !== "") {
+    const cleanedCode = couponCode.trim().toUpperCase();
+    const coupon = await Coupon.findOne({ code: cleanedCode, isActive: true });
+    if (!coupon) {
+      const error = new Error("Mã giảm giá không tồn tại hoặc đã bị vô hiệu hóa.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (coupon.usedCount >= coupon.maxUses) {
+      const error = new Error("Mã giảm giá đã hết lượt sử dụng.");
+      error.statusCode = 400;
+      throw error;
+    }
+
+    validatedCoupon = coupon;
+    if (coupon.type === "percentage") {
+      discountAmount = Math.round((PREMIUM_PRICE * coupon.value) / 100);
+    } else if (coupon.type === "fixed") {
+      discountAmount = coupon.value;
+    }
+    finalAmount = Math.max(0, PREMIUM_PRICE - discountAmount);
+  }
+
   const { merchantId, secretKey } = requireSepayConfig();
   
   // Sử dụng clientOrigin động từ request nếu hợp lệ, ngược lại dùng fallback cấu hình
   let frontendOrigin = clientOrigin;
   if (!frontendOrigin || !frontendOrigin.startsWith("http")) {
-    const originStr = process.env.FRONTEND_ORIGIN || "http://127.0.0.1:5173";
+    const originStr = process.env.FRONTEND_ORIGIN || "http://localhost:5173";
     const origins = originStr.split(",").map(o => o.trim());
     frontendOrigin = origins.find(o => o.startsWith("https://")) || origins[0];
   }
+
+  if (frontendOrigin && frontendOrigin.includes("127.0.0.1")) {
+    frontendOrigin = frontendOrigin.replace("127.0.0.1", "localhost");
+  }
+
   const invoiceNumber = `FS${Date.now()}${String(user._id).slice(-4)}`.toUpperCase();
+
+  // Xử lý nâng cấp miễn phí nếu mã giảm giá giảm 100% (finalAmount == 0)
+  if (validatedCoupon && finalAmount === 0) {
+    const baseDate = user.premiumUntil instanceof Date && user.premiumUntil > new Date() ? user.premiumUntil : new Date();
+    const premiumUntil = new Date(baseDate.getTime() + PREMIUM_DAYS * 24 * 60 * 60 * 1000);
+
+    user.plan = "premium";
+    user.premiumUntil = premiumUntil;
+    await user.save();
+
+    const order = await SubscriptionOrder.create({
+      userId: user._id,
+      invoiceNumber,
+      amount: 0,
+      originalAmount: PREMIUM_PRICE,
+      discountAmount: discountAmount,
+      couponCode: validatedCoupon.code,
+      status: "paid",
+      paidAt: new Date(),
+      rawPayload: { note: "Kích hoạt miễn phí bằng mã giảm giá 100%" }
+    });
+
+    validatedCoupon.usedCount = (validatedCoupon.usedCount || 0) + 1;
+    await validatedCoupon.save();
+
+    return {
+      freeUpgrade: true,
+      alreadyPremium: true,
+      plan: formatPlan(user),
+      order: {
+        id: order._id.toString(),
+        invoiceNumber,
+        amount: 0,
+        currency: "VND",
+        status: "paid"
+      }
+    };
+  }
 
   const order = await SubscriptionOrder.create({
     userId: user._id,
     invoiceNumber,
-    amount: PREMIUM_PRICE
+    amount: finalAmount,
+    originalAmount: PREMIUM_PRICE,
+    discountAmount: discountAmount,
+    couponCode: validatedCoupon?.code || null
   });
 
   const client = new SePayPgClient({
@@ -116,7 +192,7 @@ export async function createPremiumCheckout(userId, clientOrigin = null) {
   const checkoutFields = client.checkout.initOneTimePaymentFields({
     payment_method: "BANK_TRANSFER",
     order_invoice_number: invoiceNumber,
-    order_amount: PREMIUM_PRICE,
+    order_amount: finalAmount,
     currency: "VND",
     order_description: `Nang cap FitStyle AI Premium ${invoiceNumber}`,
     success_url: `${frontendOrigin}/premium?payment=success&invoice=${invoiceNumber}`,
@@ -128,7 +204,7 @@ export async function createPremiumCheckout(userId, clientOrigin = null) {
     order: {
       id: order._id.toString(),
       invoiceNumber,
-      amount: PREMIUM_PRICE,
+      amount: finalAmount,
       currency: "VND",
       status: order.status
     },
@@ -153,17 +229,30 @@ export async function activatePremiumByInvoice(invoiceNumber, payload = null) {
     throw error;
   }
 
-  const baseDate = user.premiumUntil instanceof Date && user.premiumUntil > new Date() ? user.premiumUntil : new Date();
-  const premiumUntil = new Date(baseDate.getTime() + PREMIUM_DAYS * 24 * 60 * 60 * 1000);
+  if (order.status !== "paid") {
+    const baseDate = user.premiumUntil instanceof Date && user.premiumUntil > new Date() ? user.premiumUntil : new Date();
+    const premiumUntil = new Date(baseDate.getTime() + PREMIUM_DAYS * 24 * 60 * 60 * 1000);
 
-  user.plan = "premium";
-  user.premiumUntil = premiumUntil;
-  await user.save();
+    user.plan = "premium";
+    user.premiumUntil = premiumUntil;
+    await user.save();
 
-  order.status = "paid";
-  order.paidAt = new Date();
-  order.rawPayload = payload;
-  await order.save();
+    order.status = "paid";
+    order.paidAt = new Date();
+    order.rawPayload = payload;
+    await order.save();
+
+    if (order.couponCode) {
+      const coupon = await Coupon.findOne({ code: order.couponCode });
+      if (coupon) {
+        coupon.usedCount = (coupon.usedCount || 0) + 1;
+        await coupon.save();
+      }
+    }
+  } else {
+    order.rawPayload = payload;
+    await order.save();
+  }
 
   return {
     plan: formatPlan(user),

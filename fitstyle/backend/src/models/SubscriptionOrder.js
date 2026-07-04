@@ -1,4 +1,4 @@
-﻿import mongoose from "mongoose";
+import mongoose from "mongoose";
 
 const subscriptionOrderSchema = new mongoose.Schema(
   {
@@ -17,7 +17,7 @@ const subscriptionOrderSchema = new mongoose.Schema(
     amount: {
       type: Number,
       required: true,
-      default: 49000
+      default: 79000
     },
     currency: {
       type: String,
@@ -32,6 +32,20 @@ const subscriptionOrderSchema = new mongoose.Schema(
     provider: {
       type: String,
       default: "sepay"
+    },
+    couponCode: {
+      type: String,
+      default: null,
+      uppercase: true,
+      trim: true
+    },
+    discountAmount: {
+      type: Number,
+      default: 0
+    },
+    originalAmount: {
+      type: Number,
+      default: 79000
     },
     paidAt: {
       type: Date,

@@ -236,6 +236,12 @@ function AppShell() {
                 Quản lý User
               </NavLink>
             )}
+            {user?.role === "admin" && (
+              <NavLink to="/admin/coupons">
+                <Percent size={17} />
+                Quản lý Coupon
+              </NavLink>
+            )}
           </nav>
         )}
       </div>
@@ -254,6 +260,7 @@ function AppShell() {
         <Route path="/admin/products" element={<AdminProductsPage user={user} apiFetch={apiFetch} />} />
         <Route path="/admin/products/manage" element={<AdminProductManagePage user={user} apiFetch={apiFetch} />} />
         <Route path="/admin/users" element={<AdminUsersPage user={user} apiFetch={apiFetch} />} />
+        <Route path="/admin/coupons" element={<AdminCouponsPage user={user} apiFetch={apiFetch} />} />
         <Route path="/profile" element={<ProfilePage user={user} apiFetch={apiFetch} onUserUpdate={(nextUser) => saveSession(token, nextUser, rememberSession)} />} />
       </Routes>
       <ChatWidgets apiFetch={apiFetch} />
@@ -1506,7 +1513,7 @@ function HomePage({ user }) {
             <div className="home-premium-note">
               <Sparkles size={18} />
               <span>Gói Free được phân tích thoải mái và có 1 lượt phối đồ. Premium mở phối đồ không giới hạn cùng lịch ăn 30 ngày.</span>
-              <Link to="/premium">Xem gói 49k</Link>
+              <Link to="/premium">Xem gói 79k</Link>
             </div>
           )}
           <div className="home-icon-strip">
@@ -1649,6 +1656,10 @@ function PremiumPage({ user, apiFetch, onUserUpdate }) {
   const [error, setError] = React.useState("");
   const formRef = React.useRef(null);
 
+  const [couponCode, setCouponCode] = React.useState("");
+  const [appliedCoupon, setAppliedCoupon] = React.useState(null);
+  const [couponError, setCouponError] = React.useState("");
+
   React.useEffect(() => {
     const invoice = searchParams.get("invoice");
     const payment = searchParams.get("payment");
@@ -1667,9 +1678,22 @@ function PremiumPage({ user, apiFetch, onUserUpdate }) {
     setMessage("");
 
     try {
-      const response = await apiFetch("/api/billing/checkout", { method: "POST" });
+      const response = await apiFetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ couponCode: appliedCoupon?.code || "" })
+      });
       const data = await safeReadJson(response);
       if (!response.ok) throw new Error(data.message || "Không thể tạo thanh toán Premium.");
+
+      if (data.freeUpgrade) {
+        setMessage("Kích hoạt Premium thành công miễn phí bằng mã giảm giá!");
+        onUserUpdate({ ...user, ...data.plan });
+        setCheckout(null);
+        setAppliedCoupon(null);
+        setCouponCode("");
+        return;
+      }
 
       if (data.alreadyPremium) {
         setMessage("Tài khoản của bạn đang là Premium.");
@@ -1683,6 +1707,24 @@ function PremiumPage({ user, apiFetch, onUserUpdate }) {
       setError(toFriendlyNetworkError(err));
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function applyCouponCode() {
+    if (!couponCode.trim()) return;
+    setCouponError("");
+    try {
+      const response = await apiFetch("/api/billing/apply-coupon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ couponCode: couponCode.trim() })
+      });
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Mã giảm giá không hợp lệ.");
+      setAppliedCoupon(data.coupon);
+    } catch (err) {
+      setCouponError(err.message);
+      setAppliedCoupon(null);
     }
   }
 
@@ -1736,11 +1778,66 @@ function PremiumPage({ user, apiFetch, onUserUpdate }) {
           <p className="eyebrow">FitStyle Premium</p>
           <h2>Nâng cấp trải nghiệm sức khỏe và phối đồ.</h2>
           <p>
-            Gói Premium 49.000đ/tháng mở khóa phối đồ không giới hạn và lịch ăn uống 30 ngày theo lượng calo mục tiêu từ kết quả phân tích của bạn.
+            Gói Premium 79.000đ/tháng mở khóa phối đồ không giới hạn và lịch ăn uống 30 ngày theo lượng calo mục tiêu từ kết quả phân tích của bạn.
           </p>
+
+          {!user.premium && (
+            <div className="coupon-application-container" style={{ margin: "var(--space-md) 0", background: "rgba(255,255,255,0.03)", padding: "12px 16px", borderRadius: "8px", border: "1px solid rgba(255,255,255,0.06)", maxWidth: "480px" }}>
+              <label style={{ display: "block", fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "6px" }}>Mã giảm giá (nếu có)</label>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <input
+                  type="text"
+                  placeholder="MÃ GIẢM GIÁ"
+                  value={couponCode}
+                  onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                  disabled={loading || appliedCoupon}
+                  style={{
+                    flex: 1,
+                    background: "rgba(0,0,0,0.2)",
+                    border: "1px solid rgba(255,255,255,0.1)",
+                    borderRadius: "6px",
+                    padding: "8px 12px",
+                    color: "#fff",
+                    fontSize: "0.9rem",
+                    outline: "none"
+                  }}
+                />
+                {appliedCoupon ? (
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => { setAppliedCoupon(null); setCouponCode(""); }}
+                    style={{ padding: "8px 16px" }}
+                  >
+                    Hủy
+                  </button>
+                ) : (
+                  <button
+                    className="primary-button"
+                    type="button"
+                    onClick={applyCouponCode}
+                    disabled={loading || !couponCode.trim()}
+                    style={{ padding: "8px 16px" }}
+                  >
+                    Áp dụng
+                  </button>
+                )}
+              </div>
+              {couponError && <p style={{ color: "var(--danger)", fontSize: "0.8rem", marginTop: "6px", margin: "6px 0 0 0" }}>{couponError}</p>}
+              {appliedCoupon && (
+                <div style={{ marginTop: "8px", fontSize: "0.85rem", color: "var(--success)" }}>
+                  <span>Áp dụng mã <strong>{appliedCoupon.code}</strong> thành công! Giảm <strong>{appliedCoupon.type === "percentage" ? `${appliedCoupon.value}%` : `${appliedCoupon.value.toLocaleString("vi-VN")}đ`}</strong>.</span>
+                  <div style={{ marginTop: "4px", color: "var(--text-primary)" }}>
+                    Giá gốc: <del>79.000đ</del> | Giá sau giảm: <strong>{appliedCoupon.finalAmount.toLocaleString("vi-VN")}đ</strong>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="premium-actions">
             <button className="primary-button" type="button" onClick={startCheckout} disabled={loading || user.premium}>
-              {user.premium ? "Đang dùng Premium" : loading ? "Đang xử lý..." : "Nâng cấp 49.000đ/tháng"}
+              {user.premium ? "Đang dùng Premium" : loading ? "Đang xử lý..." : appliedCoupon ? `Nâng cấp ${appliedCoupon.finalAmount.toLocaleString("vi-VN")}đ/tháng` : "Nâng cấp 79.000đ/tháng"}
             </button>
             <button className="secondary-button" type="button" onClick={loadMealPlan} disabled={loading}>
               Xem lịch ăn 30 ngày
@@ -1751,7 +1848,7 @@ function PremiumPage({ user, apiFetch, onUserUpdate }) {
         </div>
         <div className="premium-price-card">
           <span>Premium</span>
-          <strong>49.000đ</strong>
+          <strong>{appliedCoupon ? `${appliedCoupon.finalAmount.toLocaleString("vi-VN")}đ` : "79.000đ"}</strong>
           <small>/ tháng</small>
           <p>Hết hạn: {premiumUntil}</p>
         </div>
@@ -1787,7 +1884,7 @@ function PremiumPage({ user, apiFetch, onUserUpdate }) {
               </div>
               <div>
                 <span>Số tiền cần thanh toán:</span>
-                <strong className="redirect-price">49.000đ</strong>
+                <strong className="redirect-price">{(checkout.order.amount || 79000).toLocaleString("vi-VN")}đ</strong>
               </div>
             </div>
             <form action={checkout.checkoutUrl} method="POST" className="redirect-form">
@@ -3128,6 +3225,339 @@ function AdminUsersPage({ user, apiFetch }) {
                         <div className="action-buttons">
                           <button className="secondary-button btn-xs" onClick={() => startEdit(u)}>Sửa</button>
                           <button className="secondary-button danger-button btn-xs" onClick={() => handleDeleteUser(u._id, u.name)}>Xóa</button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function AdminCouponsPage({ user, apiFetch }) {
+  const [coupons, setCoupons] = React.useState([]);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState("");
+  const [message, setMessage] = React.useState("");
+  const [editingCouponId, setEditingCouponId] = React.useState("");
+  const [editForm, setEditForm] = React.useState({ code: "", type: "percentage", value: 0, maxUses: 1, isActive: true });
+  
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [createForm, setCreateForm] = React.useState({
+    code: "",
+    type: "percentage",
+    value: "",
+    maxUses: "",
+    isActive: true
+  });
+
+  React.useEffect(() => {
+    if (user?.role === "admin") loadCoupons();
+  }, [user]);
+
+  if (!user || user.role !== "admin") return <LockedPanel title="Quản lý mã giảm giá" />;
+
+  async function loadCoupons() {
+    setLoading(true);
+    setError("");
+    try {
+      const response = await apiFetch("/api/admin/coupons");
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể tải danh sách mã giảm giá.");
+      setCoupons(data.coupons || []);
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function startEdit(c) {
+    setEditingCouponId(c._id);
+    setEditForm({
+      code: c.code,
+      type: c.type,
+      value: c.value,
+      maxUses: c.maxUses,
+      isActive: c.isActive
+    });
+  }
+
+  async function saveCouponEdit(id) {
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await apiFetch(`/api/admin/coupons/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editForm)
+      });
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể cập nhật mã giảm giá.");
+      
+      setMessage(`Đã lưu mã giảm giá ${editForm.code.toUpperCase()}`);
+      setEditingCouponId("");
+      loadCoupons();
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteCoupon(id, code) {
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa mã giảm giá ${code}?`)) return;
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await apiFetch(`/api/admin/coupons/${id}`, { method: "DELETE" });
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể xóa mã giảm giá.");
+      
+      setMessage(`Đã xóa mã giảm giá ${code}`);
+      loadCoupons();
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCreateCoupon(e) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setMessage("");
+    try {
+      const response = await apiFetch("/api/admin/coupons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          code: createForm.code.trim().toUpperCase(),
+          type: createForm.type,
+          value: Number(createForm.value),
+          maxUses: Number(createForm.maxUses),
+          isActive: createForm.isActive
+        })
+      });
+      const data = await safeReadJson(response);
+      if (!response.ok) throw new Error(data.message || "Không thể tạo mã giảm giá.");
+      
+      setMessage(`Đã tạo mã giảm giá ${createForm.code.toUpperCase()} thành công.`);
+      setIsCreateOpen(false);
+      setCreateForm({ code: "", type: "percentage", value: "", maxUses: "", isActive: true });
+      loadCoupons();
+    } catch (err) {
+      setError(toFriendlyNetworkError(err));
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const activeCount = coupons.filter(c => c.isActive).length;
+
+  return (
+    <section className="admin-users-page coupons-page">
+      <div className="section-heading wardrobe-heading" style={{ paddingBottom: "var(--space-md)", paddingLeft: "var(--space-lg)", paddingRight: "var(--space-lg)", paddingTop: "var(--space-md)" }}>
+        <div>
+          <h2>Quản lý mã giảm giá</h2>
+          <p>Tạo và thiết lập mã giảm giá Premium theo % hoặc số tiền cố định, giới hạn lượt sử dụng.</p>
+        </div>
+        <button className="primary-link" onClick={() => setIsCreateOpen(!isCreateOpen)}>
+          {isCreateOpen ? "Đóng form tạo" : "Tạo mã mới"}
+        </button>
+      </div>
+
+      {isCreateOpen && (
+        <form className="panel admin-product-form" onSubmit={handleCreateCoupon} style={{ margin: "var(--space-md) var(--space-lg)", padding: "var(--space-md)", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "12px" }}>
+          <h3>Tạo mã giảm giá mới</h3>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "var(--space-sm)", marginTop: "var(--space-sm)" }}>
+            <div>
+              <label>Mã giảm giá (viết hoa, không dấu)</label>
+              <input
+                type="text"
+                required
+                placeholder="Ví dụ: GIAM30K, KM10"
+                value={createForm.code}
+                onChange={(e) => setCreateForm({ ...createForm, code: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+              />
+            </div>
+            <div>
+              <label>Loại giảm giá</label>
+              <select
+                value={createForm.type}
+                onChange={(e) => setCreateForm({ ...createForm, type: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+              >
+                <option value="percentage">Giảm theo %</option>
+                <option value="fixed">Giảm số tiền cố định (VND)</option>
+              </select>
+            </div>
+            <div>
+              <label>Giá trị giảm</label>
+              <input
+                type="number"
+                required
+                min="0"
+                placeholder={createForm.type === "percentage" ? "Ví dụ: 10 (tương đương 10%)" : "Ví dụ: 30000 (tương đương 30k)"}
+                value={createForm.value}
+                onChange={(e) => setCreateForm({ ...createForm, value: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+              />
+            </div>
+            <div>
+              <label>Số lượt dùng tối đa</label>
+              <input
+                type="number"
+                required
+                min="1"
+                placeholder="Ví dụ: 50"
+                value={createForm.maxUses}
+                onChange={(e) => setCreateForm({ ...createForm, maxUses: e.target.value })}
+                style={{ width: "100%", padding: "8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "6px", color: "#fff" }}
+              />
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginTop: "16px" }}>
+              <input
+                type="checkbox"
+                id="isActive"
+                checked={createForm.isActive}
+                onChange={(e) => setCreateForm({ ...createForm, isActive: e.target.checked })}
+                style={{ width: "18px", height: "18px" }}
+              />
+              <label htmlFor="isActive" style={{ margin: 0, cursor: "pointer" }}>Kích hoạt ngay</label>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: "var(--space-xs)", marginTop: "var(--space-md)" }}>
+            <button className="primary-button" type="submit" disabled={loading}>Lưu mã</button>
+            <button className="secondary-button" type="button" onClick={() => setIsCreateOpen(false)}>Hủy</button>
+          </div>
+        </form>
+      )}
+
+      <div className="dashboard-kpi-grid" style={{ margin: "var(--space-md) var(--space-lg)" }}>
+        <DashboardKpi label="Tổng số mã" value={coupons.length} />
+        <DashboardKpi label="Đang hoạt động" value={activeCount} />
+        <DashboardKpi label="Đã vô hiệu hóa" value={coupons.length - activeCount} />
+      </div>
+
+      {error && <p className="error-message" style={{ margin: "0 var(--space-lg) var(--space-sm) var(--space-lg)" }}>{error}</p>}
+      {message && <p className="success-message" style={{ margin: "0 var(--space-lg) var(--space-sm) var(--space-lg)" }}>{message}</p>}
+
+      <div className="panel admin-users-table-container" style={{ margin: "0 var(--space-lg) var(--space-lg) var(--space-lg)" }}>
+        {loading && coupons.length === 0 ? (
+          <p className="loading" style={{ padding: "var(--space-lg)" }}>Đang tải danh sách mã giảm giá...</p>
+        ) : coupons.length === 0 ? (
+          <p className="empty-state" style={{ padding: "var(--space-lg)", textAlign: "center", color: "var(--text-secondary)" }}>Chưa cấu hình mã giảm giá nào.</p>
+        ) : (
+          <table className="admin-users-table">
+            <thead>
+              <tr>
+                <th>Mã</th>
+                <th>Loại</th>
+                <th>Giá trị</th>
+                <th>Lượt dùng tối đa</th>
+                <th>Đã dùng</th>
+                <th>Còn lại</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {coupons.map((c) => {
+                const isEditing = editingCouponId === c._id;
+                const remaining = Math.max(0, c.maxUses - (c.usedCount || 0));
+
+                return (
+                  <tr key={c._id}>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          type="text"
+                          value={editForm.code}
+                          onChange={(e) => setEditForm({ ...editForm, code: e.target.value })}
+                          style={{ padding: "4px 8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px", color: "#fff", width: "120px" }}
+                        />
+                      ) : (
+                        <code style={{ fontSize: "1.05rem", color: "var(--warning)", fontWeight: "700" }}>{c.code}</code>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <select
+                          value={editForm.type}
+                          onChange={(e) => setEditForm({ ...editForm, type: e.target.value })}
+                          style={{ padding: "4px 8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px", color: "#fff" }}
+                        >
+                          <option value="percentage">Phần trăm (%)</option>
+                          <option value="fixed">Cố định (VND)</option>
+                        </select>
+                      ) : (
+                        <span>{c.type === "percentage" ? "Phần trăm" : "Cố định"}</span>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          value={editForm.value}
+                          onChange={(e) => setEditForm({ ...editForm, value: Number(e.target.value) })}
+                          style={{ padding: "4px 8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px", color: "#fff", width: "100px" }}
+                        />
+                      ) : (
+                        <strong>{c.type === "percentage" ? `${c.value}%` : `${c.value.toLocaleString("vi-VN")}đ`}</strong>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          type="number"
+                          value={editForm.maxUses}
+                          onChange={(e) => setEditForm({ ...editForm, maxUses: Number(e.target.value) })}
+                          style={{ padding: "4px 8px", background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "4px", color: "#fff", width: "80px" }}
+                        />
+                      ) : (
+                        <span>{c.maxUses}</span>
+                      )}
+                    </td>
+                    <td>{c.usedCount || 0}</td>
+                    <td>
+                      <span className={remaining === 0 ? "error-message" : ""} style={{ fontWeight: remaining === 0 ? "700" : "normal" }}>
+                        {remaining}
+                      </span>
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <input
+                          type="checkbox"
+                          checked={editForm.isActive}
+                          onChange={(e) => setEditForm({ ...editForm, isActive: e.target.checked })}
+                          style={{ width: "18px", height: "18px" }}
+                        />
+                      ) : (
+                        <span className={`plan-badge ${c.isActive && remaining > 0 ? "premium" : "free"}`}>
+                          {c.isActive && remaining > 0 ? "Hoạt động" : "Bị khóa/Hết lượt"}
+                        </span>
+                      )}
+                    </td>
+                    <td>
+                      {isEditing ? (
+                        <div className="action-buttons">
+                          <button className="primary-button btn-xs" onClick={() => saveCouponEdit(c._id)}>Lưu</button>
+                          <button className="secondary-button btn-xs" onClick={() => setEditingCouponId("")}>Hủy</button>
+                        </div>
+                      ) : (
+                        <div className="action-buttons">
+                          <button className="secondary-button btn-xs" onClick={() => startEdit(c)}>Sửa</button>
+                          <button className="secondary-button danger-button btn-xs" onClick={() => handleDeleteCoupon(c._id, c.code)}>Xóa</button>
                         </div>
                       )}
                     </td>
