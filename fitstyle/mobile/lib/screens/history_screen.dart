@@ -384,7 +384,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildDetailView() {
-    final result = _detail?['result'] as Map<String, dynamic>? ?? _detail ?? {};
+    final record = _detail?['record'] as Map<String, dynamic>?;
+    final result = record?['result'] as Map<String, dynamic>? ?? _detail?['result'] as Map<String, dynamic>? ?? _detail ?? {};
     final metrics = result['metrics'] as Map<String, dynamic>? ?? {};
 
     final bmi = metrics['bmi'] ?? result['bmi'];
