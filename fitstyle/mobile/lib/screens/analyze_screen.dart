@@ -151,16 +151,15 @@ class _AnalyzeScreenState extends State<AnalyzeScreen> {
             const SizedBox(height: 12),
             _buildDropdown('Mức vận động', _activityLevel, {
               'sedentary': 'Ít vận động',
-              'light': 'Nhẹ nhàng',
-              'moderate': 'Trung bình',
-              'active': 'Năng động',
-              'very_active': 'Rất năng động',
+              'light': 'Nhẹ nhàng (1-3 buổi/tuần)',
+              'moderate': 'Trung bình (3-5 buổi/tuần)',
+              'active': 'Tích cực (5-7 buổi/tuần)',
             }, (v) => setState(() => _activityLevel = v!)),
             const SizedBox(height: 12),
             _buildDropdown('Mục tiêu', _goal, {
-              'lose': 'Giảm cân',
-              'maintain': 'Duy trì',
-              'gain': 'Tăng cân',
+              'lose': 'Giảm cân/giảm mỡ',
+              'maintain': 'Duy trì săn chắc hơn',
+              'gain': 'Tăng cân/tăng cơ',
             }, (v) => setState(() => _goal = v!)),
             const SizedBox(height: 28),
 

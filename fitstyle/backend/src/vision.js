@@ -166,6 +166,16 @@ function getFallbackResult(file, profile) {
 async function analyzeWithGemini(file, profile) {
   const model = process.env.GEMINI_VISION_MODEL || "gemini-3.5-flash";
   const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
+
+  let mimeType = file.mimetype || "image/jpeg";
+  if (mimeType === "application/octet-stream" || !mimeType.startsWith("image/")) {
+    const ext = file.originalname?.toLowerCase().split(".").pop();
+    if (ext === "png") mimeType = "image/png";
+    else if (ext === "webp") mimeType = "image/webp";
+    else if (ext === "gif") mimeType = "image/gif";
+    else mimeType = "image/jpeg";
+  }
+
   const response = await fetch(endpoint, {
     method: "POST",
     headers: {
@@ -179,7 +189,7 @@ async function analyzeWithGemini(file, profile) {
           parts: [
             {
               inline_data: {
-                mime_type: file.mimetype,
+                mime_type: mimeType,
                 data: file.buffer.toString("base64")
               }
             },
@@ -213,7 +223,15 @@ async function analyzeWithGemini(file, profile) {
 }
 
 async function analyzeWithOpenAI(file, profile) {
-  const imageDataUrl = `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+  let mimeType = file.mimetype || "image/jpeg";
+  if (mimeType === "application/octet-stream" || !mimeType.startsWith("image/")) {
+    const ext = file.originalname?.toLowerCase().split(".").pop();
+    if (ext === "png") mimeType = "image/png";
+    else if (ext === "webp") mimeType = "image/webp";
+    else if (ext === "gif") mimeType = "image/gif";
+    else mimeType = "image/jpeg";
+  }
+  const imageDataUrl = `data:${mimeType};base64,${file.buffer.toString("base64")}`;
 
   const response = await fetch("https://api.openai.com/v1/responses", {
     method: "POST",
