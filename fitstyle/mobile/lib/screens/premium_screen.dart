@@ -16,12 +16,23 @@ class _PremiumScreenState extends State<PremiumScreen> {
   bool _isLoading = false;
   bool _isPremium = false;
   String? _error;
+  Map<String, dynamic>? _user;
 
+  final _couponController = TextEditingController();
+  Map<String, dynamic>? _appliedCoupon;
+  String? _couponError;
+  bool _isApplyingCoupon = false;
 
   @override
   void initState() {
     super.initState();
     _checkPlan();
+  }
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
   }
 
   Future<void> _checkPlan() async {
@@ -32,7 +43,32 @@ class _PremiumScreenState extends State<PremiumScreen> {
       _isLoading = false;
       if (result.isSuccess) {
         final user = result.data?['user'] as Map<String, dynamic>?;
+        _user = user;
         _isPremium = (user?['plan'] ?? 'free') == 'premium';
+      }
+    });
+  }
+
+  Future<void> _applyCoupon() async {
+    final code = _couponController.text.trim().toUpperCase();
+    if (code.isEmpty) return;
+
+    setState(() {
+      _isApplyingCoupon = true;
+      _couponError = null;
+    });
+
+    final result = await ApiService.applyCoupon(code);
+
+    if (!mounted) return;
+    setState(() {
+      _isApplyingCoupon = false;
+      if (result.isSuccess) {
+        _appliedCoupon = result.data?['coupon'] as Map<String, dynamic>?;
+        _couponController.clear();
+      } else {
+        _couponError = result.errorMessage;
+        _appliedCoupon = null;
       }
     });
   }
@@ -40,11 +76,21 @@ class _PremiumScreenState extends State<PremiumScreen> {
   Future<void> _handleCheckout() async {
     setState(() { _isLoading = true; _error = null; });
 
-    final result = await ApiService.createCheckout();
+    final result = await ApiService.createCheckout(couponCode: _appliedCoupon?['code']);
     if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (result.isSuccess) {
+      if (result.data?['freeUpgrade'] == true) {
+        setState(() {
+          _isPremium = true;
+          _appliedCoupon = null;
+          _couponController.clear();
+        });
+        _showSuccessDialog();
+        return;
+      }
+
       if (result.data?['alreadyPremium'] == true) {
         setState(() => _isPremium = true);
         return;
@@ -144,11 +190,24 @@ class _PremiumScreenState extends State<PremiumScreen> {
     );
   }
 
+  String _formatNumber(dynamic val) {
+    if (val == null) return '0';
+    final parsed = int.tryParse(val.toString()) ?? 0;
+    return parsed.toString().replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]}.');
+  }
+
   Widget _buildPremiumActive() {
+    final premiumUntilStr = _user?['premiumUntil'] as String?;
+    String formattedUntil = 'Chưa xác định';
+    if (premiumUntilStr != null && premiumUntilStr.length >= 10) {
+      formattedUntil = premiumUntilStr.substring(0, 10).split('-').reversed.join('/');
+    }
+
     return Column(
       children: [
         const SizedBox(height: 20),
         Container(
+          width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: AppColors.gradientPremium,
@@ -159,7 +218,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
             const SizedBox(height: 12),
             Text('Premium Active', style: GoogleFonts.montserrat(fontSize: 22, fontWeight: FontWeight.w800, color: Colors.white)),
             const SizedBox(height: 8),
-            Text('Bạn đang sử dụng gói Premium', style: GoogleFonts.inter(fontSize: 14, color: Colors.white70)),
+            Text('Hạn sử dụng: $formattedUntil', style: GoogleFonts.inter(fontSize: 14, color: Colors.white70, fontWeight: FontWeight.w600)),
           ]),
         ),
         const SizedBox(height: 24),
@@ -169,6 +228,18 @@ class _PremiumScreenState extends State<PremiumScreen> {
   }
 
   Widget _buildUpgradeOffer() {
+    int finalPrice = 79000;
+    if (_appliedCoupon != null) {
+      final type = _appliedCoupon!['type'] as String?;
+      final val = _appliedCoupon!['value'] as num? ?? 0;
+      if (type == 'percentage') {
+        finalPrice = (79000 - (79000 * val / 100)).round();
+      } else if (type == 'fixed') {
+        finalPrice = (79000 - val).round();
+      }
+      if (finalPrice < 0) finalPrice = 0;
+    }
+
     return Column(
       children: [
         const SizedBox(height: 8),
@@ -211,10 +282,24 @@ class _PremiumScreenState extends State<PremiumScreen> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: AppColors.warning.withValues(alpha: 0.3)),
           ),
-          child: Column(children: [
-            Text('79.000đ', style: GoogleFonts.montserrat(fontSize: 32, fontWeight: FontWeight.w900, color: AppColors.warning)),
-            Text('/ tháng', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)),
-          ]),
+          child: Column(
+            children: [
+              if (_appliedCoupon != null) ...[
+                Text(
+                  '79.000đ',
+                  style: GoogleFonts.montserrat(
+                    fontSize: 16, 
+                    fontWeight: FontWeight.w700, 
+                    color: AppColors.textMuted,
+                    decoration: TextDecoration.lineThrough,
+                  ),
+                ),
+                const SizedBox(height: 4),
+              ],
+              Text('${_formatNumber(finalPrice)}đ', style: GoogleFonts.montserrat(fontSize: 32, fontWeight: FontWeight.w900, color: AppColors.warning)),
+              Text('/ tháng', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
 
@@ -222,6 +307,132 @@ class _PremiumScreenState extends State<PremiumScreen> {
         Text('Tính năng Premium', style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
         const SizedBox(height: 16),
         ..._features.map((f) => _featureRow(f['icon'] as IconData, f['text'] as String, false)),
+        const SizedBox(height: 24),
+
+        // Coupon input field
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.bgCard,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.borderDefault),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Mã giảm giá (nếu có)',
+                style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 44,
+                      child: TextField(
+                        controller: _couponController,
+                        style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+                        textCapitalization: TextCapitalization.characters,
+                        decoration: InputDecoration(
+                          hintText: 'MÃ GIẢM GIÁ',
+                          hintStyle: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          filled: true,
+                          fillColor: Colors.black.withValues(alpha: 0.15),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.borderDefault),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.borderDefault),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                            borderSide: const BorderSide(color: AppColors.warning),
+                          ),
+                        ),
+                        enabled: !_isLoading && _appliedCoupon == null,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  SizedBox(
+                    height: 44,
+                    child: _appliedCoupon != null
+                        ? ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _appliedCoupon = null;
+                                _couponController.clear();
+                              });
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.bgCardElevated,
+                              foregroundColor: AppColors.textPrimary,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              side: const BorderSide(color: AppColors.borderDefault),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                            ),
+                            child: Text('Hủy', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+                          )
+                        : ElevatedButton(
+                            onPressed: _isApplyingCoupon ? null : _applyCoupon,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.warning,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                              padding: const EdgeInsets.symmetric(horizontal: 16),
+                            ),
+                            child: _isApplyingCoupon
+                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                : Text('Áp dụng', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+                          ),
+                  ),
+                ],
+              ),
+              if (_couponError != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _couponError!,
+                  style: GoogleFonts.inter(fontSize: 12, color: AppColors.danger, fontWeight: FontWeight.w500),
+                ),
+              ],
+              if (_appliedCoupon != null) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.health.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.check_circle, color: AppColors.health, size: 16),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Áp dụng mã ${_appliedCoupon!['code']} thành công!',
+                            style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.health),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Đã giảm: ${_appliedCoupon!['type'] == 'percentage' ? '${_appliedCoupon!['value']}%' : '${_formatNumber(_appliedCoupon!['value'])}đ'}',
+                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
         const SizedBox(height: 24),
 
         if (_error != null) ...[
@@ -245,7 +456,10 @@ class _PremiumScreenState extends State<PremiumScreen> {
             child: ElevatedButton(
               onPressed: _isLoading ? null : _handleCheckout,
               style: ElevatedButton.styleFrom(backgroundColor: Colors.transparent, shadowColor: Colors.transparent, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              child: Text('Nâng cấp ngay', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white)),
+              child: Text(
+                _appliedCoupon != null ? 'Nâng cấp chỉ ${_formatNumber(finalPrice)}đ' : 'Nâng cấp ngay', 
+                style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: Colors.white),
+              ),
             ),
           ),
         ),

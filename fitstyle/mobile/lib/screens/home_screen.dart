@@ -465,11 +465,12 @@ class _HomeTab extends StatelessWidget {
   Widget _buildStatsRow() {
     final profile = latestAnalysis?['profile'] as Map<String, dynamic>?;
     final result = latestAnalysis?['result'] as Map<String, dynamic>?;
+    final summary = latestAnalysis?['summary'] as Map<String, dynamic>?;
 
     final height = profile?['heightCm']?.toString() ?? '--';
     final weight = profile?['weightKg']?.toString() ?? '--';
 
-    final bmi = result?['bmi'];
+    final bmi = summary?['bmi'] ?? result?['metrics']?['bmi'] ?? result?['bmi'];
     final bmiVal = bmi is Map ? (bmi['value']?.toString() ?? '--') : (bmi?.toString() ?? '--');
 
     return Row(

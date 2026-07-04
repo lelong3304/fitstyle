@@ -86,9 +86,50 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildHistoryCard(Map<String, dynamic> item) {
+    final summary = item['summary'] as Map<String, dynamic>? ?? {};
     final result = item['result'] as Map<String, dynamic>? ?? {};
-    final bmi = result['bmi'];
-    final bodyShape = result['bodyShape'];
+
+    // Robust parsing for BMI
+    dynamic bmiValue;
+    String bmiLabel = '';
+    if (summary.containsKey('bmi') && summary['bmi'] != null) {
+      bmiValue = summary['bmi'];
+    } else {
+      final resBmi = result['metrics']?['bmi'] ?? result['bmi'];
+      if (resBmi is Map) {
+        bmiValue = resBmi['value'];
+        bmiLabel = resBmi['label'] ?? '';
+      } else {
+        bmiValue = resBmi;
+      }
+    }
+
+    if (bmiValue != null && bmiLabel.isEmpty) {
+      final double val = double.tryParse(bmiValue.toString()) ?? 0.0;
+      if (val < 18.5) {
+        bmiLabel = 'Thiếu cân';
+      } else if (val < 23.0) {
+        bmiLabel = 'Bình thường';
+      } else if (val < 25.0) {
+        bmiLabel = 'Thừa cân';
+      } else {
+        bmiLabel = 'Béo phì';
+      }
+    }
+
+    // Robust parsing for Body Shape
+    String bodyShapeLabel = 'N/A';
+    if (summary.containsKey('bodyShape') && summary['bodyShape'] != null) {
+      bodyShapeLabel = summary['bodyShape'].toString();
+    } else {
+      final resShape = result['metrics']?['bodyShape'] ?? result['bodyShape'];
+      if (resShape is Map) {
+        bodyShapeLabel = resShape['label'] ?? 'N/A';
+      } else if (resShape != null) {
+        bodyShapeLabel = resShape.toString();
+      }
+    }
+
     final createdAt = item['createdAt'] as String? ?? '';
     final dateStr = createdAt.length >= 10 ? createdAt.substring(0, 10) : createdAt;
     final id = item['_id'] as String? ?? item['id'] as String? ?? '';
@@ -120,12 +161,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'BMI: ${_fmt(bmi?['value'])} — ${bmi?['label'] ?? ''}',
+                    'BMI: ${_fmt(bmiValue)} — $bmiLabel',
                     style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Dáng: ${bodyShape?['label'] ?? bodyShape ?? 'N/A'} · $dateStr',
+                    'Dáng: $bodyShapeLabel · $dateStr',
                     style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted),
                   ),
                 ],

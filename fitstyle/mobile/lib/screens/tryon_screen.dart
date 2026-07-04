@@ -36,12 +36,11 @@ class _TryOnScreenState extends State<TryOnScreen> {
 
   void _checkForExternalData() {
     if (TryOnScreen.externalGarmentImageUrl != null) {
-      setState(() {
-        _garmentImageUrl = TryOnScreen.externalGarmentImageUrl;
-        _garmentProductName = TryOnScreen.externalProductName;
-        _garmentImage = null; // Clear file if URL is set
-        _result = null; // Clear old result
-      });
+      _garmentImageUrl = TryOnScreen.externalGarmentImageUrl;
+      _garmentProductName = TryOnScreen.externalProductName;
+      _garmentImage = null; // Clear file if URL is set
+      _result = null; // Clear old result
+      
       // Clear static fields so they don't persist
       TryOnScreen.externalGarmentImageUrl = null;
       TryOnScreen.externalProductName = null;

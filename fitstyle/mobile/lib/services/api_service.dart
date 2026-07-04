@@ -268,14 +268,35 @@ class ApiService {
     }
   }
 
-  static Future<ApiResult> createCheckout() async {
+  static Future<ApiResult> createCheckout({String? couponCode}) async {
     try {
       final token = await StorageService.getToken();
       if (token == null) return ApiResult.error('Chưa đăng nhập.', statusCode: 401);
-      final response = await http.post(Uri.parse('$baseUrl/api/billing/checkout'), headers: _jsonHeaders(token: token));
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/billing/checkout'),
+        headers: _jsonHeaders(token: token),
+        body: jsonEncode({'couponCode': couponCode}),
+      );
       final data = jsonDecode(response.body) as Map<String, dynamic>;
       if (response.statusCode == 200) return ApiResult.success(data);
       return ApiResult.error(data['message'] as String? ?? 'Không thể tạo thanh toán.', statusCode: response.statusCode);
+    } catch (e) {
+      return ApiResult.error('Không thể kết nối đến máy chủ.');
+    }
+  }
+
+  static Future<ApiResult> applyCoupon(String couponCode) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) return ApiResult.error('Chưa đăng nhập.', statusCode: 401);
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/billing/apply-coupon'),
+        headers: _jsonHeaders(token: token),
+        body: jsonEncode({'couponCode': couponCode}),
+      );
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200) return ApiResult.success(data);
+      return ApiResult.error(data['message'] as String? ?? 'Mã giảm giá không hợp lệ.', statusCode: response.statusCode);
     } catch (e) {
       return ApiResult.error('Không thể kết nối đến máy chủ.');
     }
