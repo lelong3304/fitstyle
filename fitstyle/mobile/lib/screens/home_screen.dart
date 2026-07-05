@@ -268,7 +268,7 @@ class _HomeTab extends StatelessWidget {
           // ── Gợi ý outfits phổ biến ──
           _buildSectionHeader('Gợi ý phong cách nổi bật', showSeeAll: true),
           const SizedBox(height: 14),
-          _buildStyleGrid(),
+          _buildStyleGrid(context),
           const SizedBox(height: 20),
         ],
       ),
@@ -564,7 +564,7 @@ class _HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildStyleGrid() {
+  Widget _buildStyleGrid(BuildContext context) {
     final styles = [
       {
         'title': 'Tối giản (Minimalism)',
@@ -872,8 +872,7 @@ class _HomeTab extends StatelessWidget {
               ),
             ],
           );
-        };
-      },
-    );
+        },
+      );
+    }
   }
-}
