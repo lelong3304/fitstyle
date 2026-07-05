@@ -871,8 +871,9 @@ class _HomeTab extends StatelessWidget {
                 ),
               ),
             ],
-          );
-        },
-      );
-    }
+          ),
+        );
+      },
+    );
+  }
   }
