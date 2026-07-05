@@ -565,93 +565,315 @@ class _HomeTab extends StatelessWidget {
   }
 
   Widget _buildStyleGrid() {
+    final styles = [
+      {
+        'title': 'Tối giản (Minimalism)',
+        'desc': 'Tập trung vào sự đơn giản, tinh tế với phom dáng cơ bản và các gam màu trung tính sang trọng.',
+        'tag': 'Gam màu trung tính',
+        'imageUrl': 'https://res.cloudinary.com/dfdkqvrfl/image/upload/v1783259730/fitstyle-ai/styles/f4zysgmmui97o3vea9cd.jpg',
+        'badge': 'Tinh tế',
+        'details': [
+          'Màu sắc chủ đạo: Trắng, Đen, Xám, Kem, Beige.',
+          'Trang phục cơ bản: Áo thun trơn cổ tròn, quần tây ống đứng, blazer tối giản, giày sneaker trắng.',
+          'Mẹo phối đồ: Tránh các họa tiết sặc sỡ, ưu tiên chất liệu cao cấp đứng phom và phối tối đa 3 màu trên một outfit.'
+        ]
+      },
+      {
+        'title': 'Đường phố (Streetwear)',
+        'desc': 'Phong cách bụi bặm, phá cách và cá tính, kết hợp giữa văn hóa hiphop, skate và thể thao đường phố.',
+        'tag': 'Năng động',
+        'imageUrl': 'https://res.cloudinary.com/dfdkqvrfl/image/upload/v1783259733/fitstyle-ai/styles/vitucbcgm5uh3iszhhex.jpg',
+        'badge': 'Cá tính',
+        'details': [
+          'Màu sắc chủ đạo: Đen, Neon, Graphic in nổi bật, Xám washed.',
+          'Trang phục cơ bản: Áo hoodie oversized, quần cargo túi hộp, áo phông graphic, giày sneaker hầm hố.',
+          'Mẹo phối đồ: Sử dụng quy tắc layering (xếp lớp), phối đồ oversized và tạo điểm nhấn bằng các phụ kiện như mũ len, xích quần.'
+        ]
+      },
+      {
+        'title': 'Cổ điển (Vintage)',
+        'desc': 'Mang hơi thở của các thập niên trước với tông màu trầm ấm, họa tiết cổ điển và nét hoài niệm sâu lắng.',
+        'tag': 'Hoài niệm',
+        'imageUrl': 'https://res.cloudinary.com/dfdkqvrfl/image/upload/v1783259735/fitstyle-ai/styles/xnf2rva2pkcmphhrygze.jpg',
+        'badge': 'Hoài cổ',
+        'details': [
+          'Màu sắc chủ đạo: Nâu đất, Vàng mù tạt, Xanh olive, Đỏ trầm, Denim.',
+          'Trang phục cơ bản: Áo khoác da sờn, quần jeans cạp cao, áo dệt kim, sơ mi họa tiết ô kẻ.',
+          'Mẹo phối đồ: Sơ vin gọn gàng, sử dụng thắt lưng da bản to cổ điển và ưu tiên phụ kiện kim loại màu đồng/vàng cũ.'
+        ]
+      },
+      {
+        'title': 'Thể thao (Sporty)',
+        'desc': 'Sự kết hợp hoàn hảo giữa trang phục thể thao khỏe khoắn và thời trang năng động hàng ngày.',
+        'tag': 'Khỏe khoắn',
+        'imageUrl': 'https://res.cloudinary.com/dfdkqvrfl/image/upload/v1783259741/fitstyle-ai/styles/iiun20vroojtlyhwkrbj.jpg',
+        'badge': 'Năng động',
+        'details': [
+          'Màu sắc chủ đạo: Trắng, Xanh dương đậm, Đỏ tươi, Xám sport.',
+          'Trang phục cơ bản: Áo nỉ sweatshirt, quần jogger co giãn, áo thun polo ôm, giày chạy bộ cao cấp.',
+          'Mẹo phối đồ: Kết hợp một món đồ ôm sát với một món đồ rộng rãi (ví dụ: quần jogger rộng phối với áo crop hoặc polo gọn gàng).'
+        ]
+      },
+      {
+        'title': 'Smart-Casual',
+        'desc': 'Phong cách cân bằng hoàn hảo giữa lịch sự trang nhã công sở và nét năng động thường nhật.',
+        'tag': 'Thanh lịch công sở',
+        'imageUrl': 'https://res.cloudinary.com/dfdkqvrfl/image/upload/v1783259743/fitstyle-ai/styles/c7yunww6jyurgdygx6lt.jpg',
+        'badge': 'Thanh lịch',
+        'details': [
+          'Màu sắc chủ đạo: Xanh navy, Xám, Be, Đen, Xanh pastel.',
+          'Trang phục cơ bản: Sơ mi linen hoặc Oxford, quần chinos/tây slimfit, blazer không đệm vai, giày lười loafer.',
+          'Mẹo phối đồ: Thay thế áo sơ mi bằng áo thun cổ tròn chất lượng cao bên dưới blazer, xắn nhẹ tay áo để tạo cảm giác tự nhiên.'
+        ]
+      }
+    ];
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 0.72,
-      children: [
-        _buildProductCard(
-          title: 'Áo thun Casual Fit',
-          brand: 'Shopee · Nam',
-          price: '189.000₫',
-          imageUrl: 'https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=300&q=80',
-          bodyShape: 'Cân đối',
-        ),
-        _buildProductCard(
-          title: 'Quần tây Slimfit',
-          brand: 'Lazada · Unisex',
-          price: '299.000₫',
-          imageUrl: 'https://images.unsplash.com/photo-1624378439575-d8705ad7ae80?w=300&q=80',
-          bodyShape: 'Cân đối',
-        ),
-      ],
+      childAspectRatio: 0.70,
+      children: styles.map((style) => _buildStyleCard(context, style)).toList(),
     );
   }
 
-  Widget _buildProductCard({
-    required String title,
-    required String brand,
-    required String price,
-    required String imageUrl,
-    required String bodyShape,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.bgCard,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.borderDefault),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.network(
-                    imageUrl,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: AppColors.bgCardElevated,
-                      child: const Icon(Icons.image_not_supported_outlined, color: AppColors.textMuted),
+  Widget _buildStyleCard(BuildContext context, Map<String, dynamic> style) {
+    return GestureDetector(
+      onTap: () => _showStyleDetail(context, style),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.bgCard,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderDefault),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    child: Image.network(
+                      style['imageUrl']!,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: AppColors.bgCardElevated,
+                        child: const Icon(Icons.image_not_supported_outlined, color: AppColors.textMuted),
+                      ),
                     ),
                   ),
-                ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.65),
-                      borderRadius: BorderRadius.circular(6),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(style['badge']!, style: GoogleFonts.inter(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
                     ),
-                    child: Text(bodyShape, style: GoogleFonts.inter(fontSize: 10, color: Colors.white, fontWeight: FontWeight.w600)),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(style['tag']!, style: GoogleFonts.inter(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 4),
+                  Text(
+                    style['title']!,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    style['desc']!,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(fontSize: 11, color: AppColors.textSecondary, height: 1.3),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStyleDetail(BuildContext context, Map<String, dynamic> style) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return Container(
+          height: MediaQuery.of(context).size.height * 0.85,
+          decoration: const BoxDecoration(
+            color: AppColors.bgBody,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              // Pull handle
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Top Bar with Close button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Chi tiết phong cách',
+                      style: GoogleFonts.montserrat(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: AppColors.textPrimary),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
+              ),
+              
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Large Style Image
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(20),
+                        child: Image.network(
+                          style['imageUrl']!,
+                          width: double.infinity,
+                          height: 300,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            height: 300,
+                            color: AppColors.bgCardElevated,
+                            child: const Icon(Icons.image_not_supported_outlined, color: AppColors.textMuted, size: 40),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Style Title and Tagline
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              style['title']!,
+                              style: GoogleFonts.montserrat(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              style['badge']!,
+                              style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primaryLight),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        style['tag']!,
+                        style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.warning),
+                      ),
+                      const SizedBox(height: 12),
+                      
+                      // Description
+                      Text(
+                        style['desc']!,
+                        style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
+                      ),
+                      const SizedBox(height: 24),
+                      
+                      // Detail Points
+                      Text(
+                        '💡 Gợi ý phối đồ từ AI:',
+                        style: GoogleFonts.montserrat(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: 12),
+                      Column(
+                        children: (style['details'] as List<String>).map((point) {
+                          final parts = point.split(':');
+                          final label = parts[0];
+                          final desc = parts.sublist(1).join(':');
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(Icons.auto_awesome, color: AppColors.primaryLight, size: 16),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: RichText(
+                                    text: TextSpan(
+                                      style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                                      children: [
+                                        TextSpan(
+                                          text: '$label:',
+                                          style: const TextStyle(fontWeight: FontWeight.w800, color: AppColors.textPrimary),
+                                        ),
+                                        TextSpan(text: desc),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(brand, style: GoogleFonts.inter(fontSize: 10, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
-                const SizedBox(height: 4),
-                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.montserrat(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                const SizedBox(height: 6),
-                Text(price, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primaryLight)),
-              ],
-            ),
-          ),
-        ],
-      ),
+              ),
+              
+              // Action Button
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 30),
+                child: GradientButton(
+                  text: 'Thử phối đồ ngay 👕',
+                  onPressed: () {
+                    Navigator.pop(context);
+                    onNavigateToTab(2); // Goes to Phối đồ tab
+                  },
+                ),
+              ),
+            ],
+          );
+        };
+      },
     );
   }
 }
