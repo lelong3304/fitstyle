@@ -300,15 +300,36 @@ class _HomeTab extends StatelessWidget {
         ),
         Row(
           children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: AppColors.bgCard,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.borderDefault),
+            GestureDetector(
+              onTap: () => _showNotificationsSheet(context),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: AppColors.bgCard,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.borderDefault),
+                ),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 22),
+                    if (isPremium)
+                      Positioned(
+                        top: 10,
+                        right: 10,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: AppColors.danger,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
               ),
-              child: const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 22),
             ),
             const SizedBox(width: 12),
             GestureDetector(
@@ -876,4 +897,134 @@ class _HomeTab extends StatelessWidget {
       },
     );
   }
+
+  String _formatPremiumExpiry(String? premiumUntilStr) {
+    if (premiumUntilStr == null) return '';
+    try {
+      final dt = DateTime.parse(premiumUntilStr);
+      return '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
+    } catch (_) {
+      return '';
+    }
   }
+
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        final list = <Map<String, String>>[];
+        
+        if (isPremium) {
+          final expiry = _formatPremiumExpiry(user?['premiumUntil']);
+          list.add({
+            'title': 'Kích hoạt Premium thành công 🎉',
+            'desc': 'Chúc mừng bạn đã nâng cấp Premium thành công! Hạn dùng gói của bạn là đến hết ngày $expiry.',
+            'time': 'Vừa xong',
+            'type': 'premium'
+          });
+        }
+        
+        list.add({
+          'title': 'Mở khóa thực đơn & Phối đồ 💎',
+          'desc': isPremium 
+              ? 'Cảm ơn bạn đã lựa chọn Premium. Giờ đây bạn đã có quyền truy cập thực đơn 30 ngày và phối đồ không giới hạn.'
+              : 'Nâng cấp gói Premium chỉ với 79.000đ/tháng để nhận đầy đủ thực đơn 30 ngày và phối đồ không giới hạn.',
+          'time': '1 ngày trước',
+          'type': 'promo'
+        });
+        
+        list.add({
+          'title': 'Chào mừng đến với FitStyle 👋',
+          'desc': 'Chúc bạn có một trải nghiệm tuyệt vời cùng AI phân tích vóc dáng và phối đồ thông minh.',
+          'time': '2 ngày trước',
+          'type': 'welcome'
+        });
+
+        return Container(
+          decoration: const BoxDecoration(
+            color: AppColors.bgBody,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppColors.borderDefault,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Thông báo',
+                style: GoogleFonts.montserrat(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                  itemCount: list.length,
+                  separatorBuilder: (_, __) => const Divider(color: AppColors.borderDefault, height: 20),
+                  itemBuilder: (context, index) {
+                    final item = list[index];
+                    IconData iconData = Icons.notifications_rounded;
+                    Color iconColor = AppColors.primaryLight;
+                    if (item['type'] == 'premium') {
+                      iconData = Icons.workspace_premium_rounded;
+                      iconColor = AppColors.warning;
+                    } else if (item['type'] == 'promo') {
+                      iconData = Icons.auto_awesome;
+                      iconColor = AppColors.secondary;
+                    }
+                    
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: iconColor.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(iconData, color: iconColor, size: 20),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item['title']!,
+                                style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                item['desc']!,
+                                style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary, height: 1.4),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                item['time']!,
+                                style: GoogleFonts.inter(fontSize: 10, color: AppColors.textMuted),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}

@@ -7,7 +7,7 @@ import { Coupon } from "./models/Coupon.js";
 
 export const PREMIUM_PRICE = 79000;
 export const PREMIUM_DAYS = 30;
-export const FREE_TRY_ON_LIMIT = 1;
+export const FREE_TRY_ON_LIMIT = 2;
 
 export function isPremiumUser(user) {
   if (!user) return false;
@@ -18,13 +18,18 @@ export function isPremiumUser(user) {
 
 export function formatPlan(user) {
   const premium = isPremiumUser(user);
+  
+  const todayStr = new Date().toDateString();
+  const lastUsedStr = user.tryOnLastUsed ? new Date(user.tryOnLastUsed).toDateString() : "";
+  const currentUsage = (todayStr === lastUsedStr) ? (user.tryOnUsageCount || 0) : 0;
+
   return {
     plan: premium ? "premium" : "free",
     premium,
     premiumUntil: premium ? user.premiumUntil?.toISOString() : null,
-    tryOnUsageCount: user.tryOnUsageCount || 0,
+    tryOnUsageCount: currentUsage,
     freeTryOnLimit: FREE_TRY_ON_LIMIT,
-    remainingFreeTryOn: premium ? null : Math.max(0, FREE_TRY_ON_LIMIT - (user.tryOnUsageCount || 0))
+    remainingFreeTryOn: premium ? null : Math.max(0, FREE_TRY_ON_LIMIT - currentUsage)
   };
 }
 
@@ -43,8 +48,17 @@ export async function assertCanUseTryOn(userId) {
 
   if (isPremiumUser(user)) return { user, premium: true };
 
-  if ((user.tryOnUsageCount || 0) >= FREE_TRY_ON_LIMIT) {
-    const error = new Error("Gói Free chỉ được phối đồ 1 lần. Nâng cấp Premium 79.000đ/tháng để phối đồ không giới hạn.");
+  const todayStr = new Date().toDateString();
+  const lastUsedStr = user.tryOnLastUsed ? new Date(user.tryOnLastUsed).toDateString() : "";
+  
+  let currentUsage = user.tryOnUsageCount || 0;
+  if (todayStr !== lastUsedStr) {
+    currentUsage = 0;
+    user.tryOnUsageCount = 0;
+  }
+
+  if (currentUsage >= FREE_TRY_ON_LIMIT) {
+    const error = new Error("Tài khoản Free chỉ được phối đồ tối đa 2 lần một ngày. Nâng cấp Premium 79.000đ/tháng để phối đồ không giới hạn.");
     error.statusCode = 402;
     error.code = "PREMIUM_REQUIRED";
     error.plan = formatPlan(user);
@@ -56,7 +70,16 @@ export async function assertCanUseTryOn(userId) {
 
 export async function recordTryOnUsage(user) {
   if (!user || isPremiumUser(user)) return formatPlan(user);
-  user.tryOnUsageCount = (user.tryOnUsageCount || 0) + 1;
+  
+  const todayStr = new Date().toDateString();
+  const lastUsedStr = user.tryOnLastUsed ? new Date(user.tryOnLastUsed).toDateString() : "";
+
+  if (todayStr !== lastUsedStr) {
+    user.tryOnUsageCount = 1;
+  } else {
+    user.tryOnUsageCount = (user.tryOnUsageCount || 0) + 1;
+  }
+  user.tryOnLastUsed = new Date();
   await user.save();
   return formatPlan(user);
 }

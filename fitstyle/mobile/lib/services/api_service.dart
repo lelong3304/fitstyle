@@ -359,6 +359,35 @@ class ApiService {
     }
   }
 
+  static Future<ApiResult> submitErrorReport({
+    required String title,
+    required String description,
+    File? screenshot,
+  }) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) return ApiResult.error('Chưa đăng nhập.', statusCode: 401);
+
+      final request = http.MultipartRequest('POST', Uri.parse('$baseUrl/api/reports'));
+      request.headers.addAll(_authHeaders(token));
+      request.fields['title'] = title;
+      request.fields['description'] = description;
+
+      if (screenshot != null) {
+        request.files.add(await http.MultipartFile.fromPath('screenshot', screenshot.path));
+      }
+
+      final streamedResponse = await request.send();
+      final responseBody = await streamedResponse.stream.bytesToString();
+      final data = jsonDecode(responseBody) as Map<String, dynamic>;
+
+      if (streamedResponse.statusCode == 201) return ApiResult.success(data);
+      return ApiResult.error(data['message'] as String? ?? 'Gửi báo cáo thất bại.', statusCode: streamedResponse.statusCode);
+    } catch (e) {
+      return ApiResult.error('Không thể kết nối đến máy chủ.');
+    }
+  }
+
   static Future<void> logout() async {
     await StorageService.clearAll();
   }

@@ -1,4 +1,4 @@
-﻿import mongoose from "mongoose";
+import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema(
   {
@@ -36,6 +36,10 @@ const userSchema = new mongoose.Schema(
     tryOnUsageCount: {
       type: Number,
       default: 0
+    },
+    tryOnLastUsed: {
+      type: Date,
+      default: null
     }
   },
   {

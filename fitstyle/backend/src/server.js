@@ -7,8 +7,9 @@ import { getAdminDashboard } from "./adminDashboard.js";
 import { analyzeProfile, validateProfile } from "./analysis.js";
 import { loginUser, publicUser, registerUser, requireAdmin, requireAuth } from "./auth.js";
 import { bodyShapeOptions } from "./catalog.js";
-import { uploadTryOnImage } from "./cloudinary.js";
+import { uploadTryOnImage, uploadErrorScreenshot } from "./cloudinary.js";
 import { connectDatabase, hasMongoConfig } from "./db.js";
+import { ErrorReport } from "./models/ErrorReport.js";
 import { AffiliateClick } from "./models/AffiliateClick.js";
 import { createTryOn } from "./pixelcut.js";
 import { extractProductFromUrl } from "./productExtractor.js";
@@ -571,6 +572,32 @@ app.post("/api/affiliate-clicks", requireAuth, async (req, res, next) => {
     }
 
     return res.json({ ok: true, affiliateUrl: product.affiliateUrl });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+app.post("/api/reports", requireAuth, upload.single("screenshot"), async (req, res, next) => {
+  try {
+    const { title, description } = req.body;
+    if (!title || !description) {
+      return res.status(400).json({ message: "Vui lòng nhập tên lỗi và mô tả lỗi." });
+    }
+
+    let screenshotUrl = null;
+    if (req.file) {
+      screenshotUrl = await uploadErrorScreenshot(req.file);
+    }
+
+    await connectDatabase();
+    const report = await ErrorReport.create({
+      userId: req.user.id,
+      title,
+      description,
+      screenshotUrl
+    });
+
+    return res.status(201).json({ success: true, report });
   } catch (error) {
     return next(error);
   }

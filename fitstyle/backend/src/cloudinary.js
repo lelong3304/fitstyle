@@ -51,3 +51,9 @@ export async function uploadTryOnImage(file, kind) {
     bytes: result.bytes
   };
 }
+
+export async function uploadErrorScreenshot(file) {
+  if (!file) return null;
+  const result = await uploadBuffer(file, "fitstyle-ai/error-reports");
+  return result.secure_url;
+}
