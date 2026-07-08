@@ -240,7 +240,7 @@ class _HomeTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Header với Avatar & Thông báo ──
-          _buildHeaderRow(),
+          _buildHeaderRow(context),
           const SizedBox(height: 24),
 
           // ── Slider Banners (Carousel) ──
@@ -275,7 +275,7 @@ class _HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildHeaderRow() {
+  Widget _buildHeaderRow(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
