@@ -26,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   int _currentNavIndex = 0;
   String? _selectedGarmentUrl;
   String? _selectedGarmentName;
+  bool _hasUnreadNotification = true;
 
   late AnimationController _fadeController;
   late Animation<double> _fadeAnim;
@@ -106,6 +107,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 user: _user,
                 latestAnalysis: _latestAnalysis,
                 onNavigateToTab: (idx) => _handleNavigateToTab(idx),
+                hasUnreadNotification: _hasUnreadNotification,
+                onNotificationTap: () {
+                  setState(() {
+                    _hasUnreadNotification = false;
+                  });
+                },
                 onProfileTap: () async {
                   final result = await Navigator.of(context).push<Map<String, dynamic>>(
                     MaterialPageRoute(builder: (_) => ProfileScreen(user: _user!)),
@@ -221,6 +228,8 @@ class _HomeTab extends StatelessWidget {
   final Map<String, dynamic>? latestAnalysis;
   final ValueChanged<int> onNavigateToTab;
   final VoidCallback onProfileTap;
+  final bool hasUnreadNotification;
+  final VoidCallback onNotificationTap;
 
   const _HomeTab({
     required this.name,
@@ -229,6 +238,8 @@ class _HomeTab extends StatelessWidget {
     this.latestAnalysis,
     required this.onNavigateToTab,
     required this.onProfileTap,
+    required this.hasUnreadNotification,
+    required this.onNotificationTap,
   });
 
   @override
@@ -301,7 +312,10 @@ class _HomeTab extends StatelessWidget {
         Row(
           children: [
             GestureDetector(
-              onTap: () => _showNotificationsSheet(context),
+              onTap: () {
+                onNotificationTap();
+                _showNotificationsSheet(context);
+              },
               child: Container(
                 width: 42,
                 height: 42,
@@ -314,7 +328,7 @@ class _HomeTab extends StatelessWidget {
                   alignment: Alignment.center,
                   children: [
                     const Icon(Icons.notifications_none_rounded, color: AppColors.textPrimary, size: 22),
-                    if (isPremium)
+                    if (hasUnreadNotification)
                       Positioned(
                         top: 10,
                         right: 10,
