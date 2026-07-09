@@ -37,14 +37,48 @@ class _PremiumScreenState extends State<PremiumScreen> {
 
   Future<void> _checkPlan() async {
     setState(() => _isLoading = true);
-    final result = await ApiService.getBillingPlan();
+    final result = await ApiService.getMe();
     if (!mounted) return;
     setState(() {
       _isLoading = false;
       if (result.isSuccess) {
         final user = result.data?['user'] as Map<String, dynamic>?;
         _user = user;
-        _isPremium = (user?['plan'] ?? 'free') == 'premium';
+        final nowPremium = (user?['plan'] ?? 'free') == 'premium';
+        if (nowPremium && !_isPremium) {
+          _isPremium = true;
+          _showSuccessDialog();
+        } else {
+          _isPremium = nowPremium;
+        }
+      }
+    });
+  }
+
+  Future<void> _manualCheckPlan() async {
+    setState(() => _isLoading = true);
+    final result = await ApiService.getMe();
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      if (result.isSuccess) {
+        final user = result.data?['user'] as Map<String, dynamic>?;
+        _user = user;
+        final nowPremium = (user?['plan'] ?? 'free') == 'premium';
+        if (nowPremium && !_isPremium) {
+          _isPremium = true;
+          _showSuccessDialog();
+        } else {
+          _isPremium = nowPremium;
+          if (!nowPremium) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Hệ thống chưa nhận được thanh toán. Vui lòng chuyển khoản đúng nội dung và thử lại sau vài giây.'),
+                backgroundColor: AppColors.warning,
+              ),
+            );
+          }
+        }
       }
     });
   }
@@ -465,6 +499,23 @@ class _PremiumScreenState extends State<PremiumScreen> {
         ),
         const SizedBox(height: 12),
         Text('Thanh toán an toàn qua SePay', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+        const SizedBox(height: 20),
+        SizedBox(
+          width: double.infinity,
+          height: 48,
+          child: OutlinedButton.icon(
+            onPressed: _isLoading ? null : _manualCheckPlan,
+            icon: const Icon(Icons.refresh_rounded, color: AppColors.warning),
+            label: Text(
+              'Kiểm tra trạng thái thanh toán 🔄',
+              style: GoogleFonts.inter(fontWeight: FontWeight.w700, color: AppColors.warning),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: AppColors.warning),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+          ),
+        ),
       ],
     );
   }

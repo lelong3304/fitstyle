@@ -359,6 +359,29 @@ class ApiService {
     }
   }
 
+  static Future<ApiResult> trackAffiliateClick({
+    required String productId,
+    String? bodyShape,
+  }) async {
+    try {
+      final token = await StorageService.getToken();
+      if (token == null) return ApiResult.error('Chưa đăng nhập.', statusCode: 401);
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/affiliate-clicks'),
+        headers: _jsonHeaders(token: token),
+        body: jsonEncode({
+          'productId': productId,
+          if (bodyShape != null) 'bodyShape': bodyShape,
+        }),
+      );
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200) return ApiResult.success(data);
+      return ApiResult.error(data['message'] as String? ?? 'Lỗi theo dõi click.', statusCode: response.statusCode);
+    } catch (e) {
+      return ApiResult.error('Không thể kết nối đến máy chủ.');
+    }
+  }
+
   static Future<ApiResult> submitErrorReport({
     required String title,
     required String description,

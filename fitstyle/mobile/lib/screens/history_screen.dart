@@ -7,7 +7,8 @@ import 'meal_plan_screen.dart';
 import 'premium_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final bool isActive;
+  const HistoryScreen({super.key, this.isActive = false});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -25,6 +26,15 @@ class _HistoryScreenState extends State<HistoryScreen> {
   void initState() {
     super.initState();
     _loadHistory();
+  }
+
+  @override
+  void didUpdateWidget(HistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.isActive && !oldWidget.isActive) {
+      _loadHistory();
+      _detail = null; // Auto return to list from detail view when navigating back to tab
+    }
   }
 
   Future<void> _loadHistory() async {

@@ -82,10 +82,10 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
     if (url == null || url.isEmpty) return;
 
     // Track affiliate click in background
-    final fields = {'productId': productId};
-    if (_selectedShape != null) fields['bodyShape'] = _selectedShape!;
-    // Wait, let's track using backend API if needed
-    // ApiService does not have trackAffiliateClick, but we can do it via a simple API call if defined.
+    ApiService.trackAffiliateClick(
+      productId: productId,
+      bodyShape: _selectedShape,
+    );
 
     final uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
@@ -283,56 +283,30 @@ class _WardrobeScreenState extends State<WardrobeScreen> {
                   ),
                 const SizedBox(height: 10),
                 
-                // Action Buttons: Thử phối + Mua ngay
-                Row(
-                  children: [
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () {
-                          widget.onNavigateToTab?.call(2, garmentUrl: image, garmentName: name); // Switch to Try-On tab (index 2)
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: AppColors.gradientPrimary,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.checkroom, color: Colors.white, size: 13),
-                              const SizedBox(width: 4),
-                              Text('Thử phối', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
-                            ],
-                          ),
-                        ),
+                // Action Buttons: Thử phối (full-width)
+                SizedBox(
+                  width: double.infinity,
+                  child: GestureDetector(
+                    onTap: () {
+                      widget.onNavigateToTab?.call(2, garmentUrl: image, garmentName: name); // Switch to Try-On tab (index 2)
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: AppColors.gradientPrimary,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      alignment: Alignment.center,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(Icons.checkroom, color: Colors.white, size: 13),
+                          const SizedBox(width: 4),
+                          Text('Thử phối', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: Colors.white)),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 6),
-                    Expanded(
-                      child: GestureDetector(
-                        onTap: () => _openProductLink(link, id),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 8),
-                          decoration: BoxDecoration(
-                            color: AppColors.bgCardElevated,
-                            borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: AppColors.borderDefault),
-                          ),
-                          alignment: Alignment.center,
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              const Icon(Icons.shopping_cart_outlined, color: AppColors.textPrimary, size: 13),
-                              const SizedBox(width: 4),
-                              Text('Mua ngay', style: GoogleFonts.inter(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),

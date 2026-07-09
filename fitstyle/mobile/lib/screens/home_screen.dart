@@ -46,12 +46,26 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Future<void> _loadUser() async {
-    final user = await StorageService.getUser();
+    final cachedUser = await StorageService.getUser();
+    if (cachedUser != null && mounted) {
+      setState(() {
+        _user = cachedUser;
+      });
+    }
+
+    final futures = await Future.wait([
+      ApiService.getMe(),
+      ApiService.getAnalyses(),
+    ]);
+
+    final meRes = futures[0];
+    final analysesRes = futures[1];
+
+    final user = meRes.isSuccess ? meRes.data?['user'] as Map<String, dynamic>? : cachedUser;
     Map<String, dynamic>? latest;
 
-    final res = await ApiService.getAnalyses();
-    if (res.isSuccess) {
-      final list = res.data?['analyses'] as List?;
+    if (analysesRes.isSuccess) {
+      final list = analysesRes.data?['analyses'] as List?;
       if (list != null && list.isNotEmpty) {
         latest = list.first as Map<String, dynamic>?;
       }
@@ -113,6 +127,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _hasUnreadNotification = false;
                   });
                 },
+                onPremiumTap: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const PremiumScreen()),
+                  );
+                  _loadUser();
+                },
                 onProfileTap: () async {
                   final result = await Navigator.of(context).push<Map<String, dynamic>>(
                     MaterialPageRoute(builder: (_) => ProfileScreen(user: _user!)),
@@ -137,7 +157,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               WardrobeScreen(
                 onNavigateToTab: _handleNavigateToTab,
               ),
-              const HistoryScreen(),
+              HistoryScreen(isActive: _currentNavIndex == 4),
             ],
           ),
         ),
@@ -230,6 +250,7 @@ class _HomeTab extends StatelessWidget {
   final VoidCallback onProfileTap;
   final bool hasUnreadNotification;
   final VoidCallback onNotificationTap;
+  final VoidCallback onPremiumTap;
 
   const _HomeTab({
     required this.name,
@@ -240,6 +261,7 @@ class _HomeTab extends StatelessWidget {
     required this.onProfileTap,
     required this.hasUnreadNotification,
     required this.onNotificationTap,
+    required this.onPremiumTap,
   });
 
   @override
@@ -563,7 +585,7 @@ class _HomeTab extends StatelessWidget {
 
   Widget _buildPremiumPromo(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PremiumScreen())),
+      onTap: onPremiumTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
