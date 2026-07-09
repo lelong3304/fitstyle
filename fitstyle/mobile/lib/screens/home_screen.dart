@@ -61,7 +61,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     final meRes = futures[0];
     final analysesRes = futures[1];
 
-    final user = meRes.isSuccess ? meRes.data?['user'] as Map<String, dynamic>? : cachedUser;
+    Map<String, dynamic>? user = cachedUser;
+    if (meRes.isSuccess) {
+      user = meRes.data?['user'] as Map<String, dynamic>?;
+    }
     Map<String, dynamic>? latest;
 
     if (analysesRes.isSuccess) {
