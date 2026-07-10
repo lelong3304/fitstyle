@@ -17,6 +17,7 @@ class _PremiumScreenState extends State<PremiumScreen> {
   bool _isPremium = false;
   String? _error;
   Map<String, dynamic>? _user;
+  String? _lastInvoiceNumber;
 
   final _couponController = TextEditingController();
   Map<String, dynamic>? _appliedCoupon;
@@ -37,6 +38,9 @@ class _PremiumScreenState extends State<PremiumScreen> {
 
   Future<void> _checkPlan() async {
     setState(() => _isLoading = true);
+    if (_lastInvoiceNumber != null) {
+      await ApiService.confirmPayment(_lastInvoiceNumber!);
+    }
     final result = await ApiService.getMe();
     if (!mounted) return;
     setState(() {
@@ -57,6 +61,9 @@ class _PremiumScreenState extends State<PremiumScreen> {
 
   Future<void> _manualCheckPlan() async {
     setState(() => _isLoading = true);
+    if (_lastInvoiceNumber != null) {
+      await ApiService.confirmPayment(_lastInvoiceNumber!);
+    }
     final result = await ApiService.getMe();
     if (!mounted) return;
     setState(() {
@@ -136,6 +143,9 @@ class _PremiumScreenState extends State<PremiumScreen> {
       final amount = result.data?['order']?['amount'] as num?;
 
       if (checkoutUrl != null && checkoutFields != null && invoiceNumber != null) {
+        setState(() {
+          _lastInvoiceNumber = invoiceNumber;
+        });
         if (!mounted) return;
         final paymentResult = await Navigator.push<bool>(
           context,

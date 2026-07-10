@@ -18,11 +18,33 @@ function fallbackShapeFromProfile(profile) {
 }
 
 function safeJsonParse(text) {
+  if (!text) return null;
+  let cleaned = text.trim();
+
+  // Remove markdown code blocks if present
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(json)?/, "").replace(/```$/, "").trim();
+  }
+
   try {
-    return JSON.parse(text);
-  } catch {
-    const match = text.match(/\{[\s\S]*\}/);
-    return match ? JSON.parse(match[0]) : null;
+    return JSON.parse(cleaned);
+  } catch (e1) {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    let jsonStr = match[0];
+
+    // Remove comments and trailing commas
+    jsonStr = jsonStr
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/\/\/.*/g, "")
+      .replace(/,\s*([\}\]])/g, "$1");
+
+    try {
+      return JSON.parse(jsonStr);
+    } catch (e2) {
+      console.error("Failed to parse JSON in safeJsonParse:", e2);
+      return null;
+    }
   }
 }
 
@@ -30,6 +52,9 @@ function buildVisionPrompt(profile) {
   return `Analyze this full-body photo for a Vietnamese FitStyle app.
 
 Return ONLY valid JSON. No markdown.
+- Do NOT wrap your output in markdown code blocks (e.g. \`\`\`json ... \`\`\`). Just return the raw JSON object string starting with { and ending with }.
+- NEVER use double quotes (") inside any JSON string values (such as in label, description, observations, summary, or feedback). Use single quotes (') instead if you need to quote or highlight a word.
+- Do NOT include any comments (e.g. // or /* */) or trailing commas.
 
 Allowed bodyShape values:
 slim, balanced, curvy, rectangle, pear, inverted_triangle, hourglass.
@@ -216,7 +241,8 @@ async function analyzeWithGemini(file, profile) {
   const parsed = safeJsonParse(text);
 
   if (!parsed) {
-    throw new Error("Gemini vision không trả về JSON hợp lệ.");
+    console.warn("Gemini vision returned invalid JSON, using fallback result.");
+    return getFallbackResult(file, profile);
   }
 
   return normalizeVisionResult(parsed, profile, "gemini_vision");
