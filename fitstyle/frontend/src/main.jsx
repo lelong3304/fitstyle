@@ -2087,7 +2087,7 @@ function AuthPage({ mode, user, onSession }) {
     setForm(initialAuthForm);
   }, [mode]);
 
-  if (user) return <Navigate to="/analyze" replace />;
+  if (user) return <Navigate to="/" replace />;
 
   function updateField(event) {
     const { name, value, checked, type } = event.target;
@@ -2120,7 +2120,7 @@ function AuthPage({ mode, user, onSession }) {
       if (!response.ok) throw new Error(data.message || "Không thể xác thực tài khoản.");
 
       onSession(data.token, data.user, isRegister ? true : form.rememberMe);
-      navigate("/analyze");
+      navigate("/");
     } catch (err) {
       setError(toFriendlyNetworkError(err));
     } finally {
