@@ -1639,17 +1639,19 @@ label {
 
 .tryon-preview-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-top: 12px;
 }
 
 .tryon-preview-grid img {
   width: 100%;
-  max-height: 200px;
+  height: 320px;
   object-fit: contain;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-default);
   background: var(--bg-input);
+  transition: all 0.3s ease;
 }
 
 .tryon-divider {
