@@ -1279,7 +1279,7 @@ label {
    ═══════════════════════════════════════ */
 .analyze-page {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-lg);
   align-items: start;
   padding: var(--space-lg) var(--space-xl);
@@ -1290,11 +1290,19 @@ label {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  min-width: 0;
 }
 
 .analyze-panel p {
   font-size: 0.98rem;
   color: var(--text-secondary);
+}
+
+.analyze-panel input,
+.analyze-panel select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 /* ═══════════════════════════════════════
@@ -1305,6 +1313,7 @@ label {
   flex-direction: column;
   gap: var(--space-md);
   animation: fadeSlideUp 0.5s var(--ease-out) both;
+  min-width: 0;
 }
 
 .metric-grid {
@@ -1586,7 +1595,7 @@ label {
    ═══════════════════════════════════════ */
 .tryon-page {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: var(--space-lg);
   align-items: start;
   padding: var(--space-lg) var(--space-xl);
@@ -1597,11 +1606,19 @@ label {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  min-width: 0;
 }
 
 .tryon-panel p {
   font-size: 0.98rem;
   color: var(--text-secondary);
+}
+
+.tryon-panel input,
+.tryon-panel select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .plan-inline-note {
@@ -1683,6 +1700,7 @@ label {
   min-height: 300px;
   justify-content: center;
   padding: var(--space-md) !important;
+  min-width: 0;
 }
 
 .tryon-img-container {
