@@ -102,6 +102,20 @@ function AppShell() {
   const [token, setToken] = React.useState(savedSession.token);
   const [user, setUser] = React.useState(savedSession.user);
   const [rememberSession, setRememberSession] = React.useState(savedSession.remember);
+  const [showFeedbackModal, setShowFeedbackModal] = React.useState(false);
+
+  React.useEffect(() => {
+    if (user && !localStorage.getItem("fitstyle_hasSeenFeedback")) {
+      setShowFeedbackModal(true);
+    } else {
+      setShowFeedbackModal(false);
+    }
+  }, [user]);
+
+  function closeFeedbackModal() {
+    localStorage.setItem("fitstyle_hasSeenFeedback", "true");
+    setShowFeedbackModal(false);
+  }
 
   const apiFetch = React.useCallback(
     (path, options = {}) => {
@@ -264,6 +278,51 @@ function AppShell() {
         <Route path="/profile" element={<ProfilePage user={user} apiFetch={apiFetch} onUserUpdate={(nextUser) => saveSession(token, nextUser, rememberSession)} />} />
       </Routes>
       <ChatWidgets apiFetch={apiFetch} />
+
+      {showFeedbackModal && (
+        <div className="feedback-overlay">
+          <div className="feedback-modal">
+            <button className="feedback-modal-close" onClick={closeFeedbackModal} aria-label="Đóng">
+              <X size={18} />
+            </button>
+            <img src="/feedback.png" alt="Khảo sát ý kiến" className="feedback-modal-banner" />
+            <div className="feedback-modal-body">
+              <h2>Ý kiến của bạn là vô giá! 💬</h2>
+              <div className="feedback-modal-text">
+                <p>
+                  Sau thời gian phát triển, FitStyle đã ra mắt website để mọi người trải nghiệm. Nếu bạn đã sử dụng web, chúng mình rất mong bạn dành 2–3 phút để chia sẻ cảm nhận thông qua form khảo sát dưới đây.
+                </p>
+                <p><strong>💬 Những đánh giá của bạn sẽ giúp nhóm:</strong></p>
+                <ul>
+                  <li>Cải thiện trải nghiệm sử dụng.</li>
+                  <li>Nâng cao độ chính xác của AI.</li>
+                  <li>Bổ sung những tính năng mà người dùng thực sự cần.</li>
+                </ul>
+                <p>
+                  Mỗi góp ý, dù nhỏ, đều là động lực để nhóm hoàn thiện FitStyle hơn. Cảm ơn mọi người rất nhiều vì đã dành thời gian trải nghiệm và hỗ trợ nhóm ❤️.
+                </p>
+              </div>
+            </div>
+            <div className="feedback-modal-footer">
+              <a
+                href="https://forms.gle/fxrGUywP6s9HoABe8"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="feedback-btn feedback-btn-primary"
+                onClick={closeFeedbackModal}
+              >
+                Làm khảo sát ngay 📝
+              </a>
+              <button
+                className="feedback-btn feedback-btn-secondary"
+                onClick={closeFeedbackModal}
+              >
+                Bỏ qua
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
