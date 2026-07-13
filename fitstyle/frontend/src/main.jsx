@@ -2,7 +2,10 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Link, Navigate, NavLink, Route, Routes, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { Activity, BarChart3, Camera, Dumbbell, ExternalLink, Eye, EyeOff, History, Home, Images, Lock, LogIn, LogOut, Mail, Percent, Ruler, Save, Settings, Shirt, ShoppingBag, Sparkles, Target, UserRound, UserPlus, X, ZoomIn } from "lucide-react";
+import { inject } from "@vercel/analytics";
 import "./styles.css";
+
+inject();
 
 const API_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:4000";
 
